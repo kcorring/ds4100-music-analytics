@@ -48,42 +48,14 @@
         <key>5037</key>
 		<dict>
 			<key>Track ID</key><integer>5037</integer>
-			<key>Size</key><integer>5128035</integer>
-			<key>Total Time</key><integer>248764</integer>
-			<key>Disc Number</key><integer>1</integer>
-			<key>Disc Count</key><integer>1</integer>
-			<key>Track Number</key><integer>1</integer>
-			<key>Track Count</key><integer>1</integer>
 			<key>Year</key><integer>2014</integer>
-			<key>BPM</key><integer>120</integer>
-			<key>Date Modified</key><date>2015-05-17T03:11:07Z</date>
-			<key>Date Added</key><date>2014-08-24T23:44:22Z</date>
-			<key>Bit Rate</key><integer>160</integer>
-			<key>Sample Rate</key><integer>44100</integer>
 			<key>Play Count</key><integer>78</integer>
-			<key>Play Date</key><integer>3561440702</integer>
-			<key>Play Date UTC</key><date>2016-11-08T14:05:02Z</date>
-			<key>Skip Count</key><integer>1</integer>
-			<key>Skip Date</key><date>2015-02-02T22:57:46Z</date>
-			<key>Release Date</key><date>2014-07-29T07:00:00Z</date>
 			<key>Rating</key><integer>80</integer>
-			<key>Album Rating</key><integer>80</integer>
-			<key>Album Rating Computed</key><true/>
-			<key>Persistent ID</key><string>1F820BAAA63C5F20</string>
-			<key>Track Type</key><string>File</string>
-			<key>File Folder Count</key><integer>4</integer>
-			<key>Library Folder Count</key><integer>1</integer>
 			<key>Name</key><string>Pop 101 (feat. Anami Vice)</string>
 			<key>Artist</key><string>Marianas Trench</string>
 			<key>Album Artist</key><string>Marianas Trench</string>
-			<key>Composer</key><string>Josh Ramsay</string>
 			<key>Album</key><string>Pop 101 (feat. Anami Vice) - Single</string>
 			<key>Genre</key><string>Pop</string>
-			<key>Kind</key><string>MPEG audio file</string>
-			<key>Sort Name</key><string>Pop 101 (feat. Anami Vice)</string>
-			<key>Sort Album</key><string>Pop 101 (feat. Anami Vice) - Single</string>
-			<key>Sort Artist</key><string>Marianas Trench</string>
-			<key>Location</key><string>file://localhost/C:/Users/Kaila/Music/iTunes/iTunes%20Media/Marianas%20Trench/Pop%20101%20(feat.%20Anami%20Vice)%20-%20Single/01%20Pop%20101%20(feat.%20Anami%20Vice).mp3</string>
 		</dict>
         <key>5888</key>
 		<dict>

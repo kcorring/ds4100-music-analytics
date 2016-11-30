@@ -58,7 +58,7 @@ instance/
 .webassets-cache
 
 # VIM swap:
-# .swp
+.swp
 
 # Scrapy stuff:
 .scrapy

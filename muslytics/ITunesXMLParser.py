@@ -39,9 +39,6 @@ def merge_duplicates(tracks):
 
     Args:
         tracks (list(ITunesTrack)): tracks to be scanned for duplicates and merged where necessary
-
-    Returns:
-        a list of ITunesTracks with duplicates merged and extraneous tracks removed
     """
     identifier_to_index = {}
     duplicate_identifiers = set()
@@ -87,7 +84,6 @@ def merge_duplicates(tracks):
     
     logger.info('Removed {removed} duplicate tracks, {remained} tracks remain.'
             .format(removed=removed_count, remained=len(tracks)))
-    return tracks
 
 
 def pickle_tracks(tracklist, filename=None):
@@ -138,8 +134,7 @@ def extract_tracks(filepath):
         logger.error(err)
         raise Exception(err)
 
-    tracks = _get_tracks(_get_xml_tree(filepath))
-    return merge_duplicates(tracks)
+    return _get_tracks(_get_xml_tree(filepath))
 
 
 def _get_tracks(xml_tree):
@@ -226,6 +221,7 @@ if __name__ == '__main__':
 
     if args.xml:
         tracks = extract_tracks(args.xml)
+        merge_duplicates(tracks)
         pickle_tracks(tracks, args.pickle)
     else:
         tracks = unpickle_tracks(args.pickle)

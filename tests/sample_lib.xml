@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Major Version</key><integer>1</integer>
+	<key>Minor Version</key><integer>1</integer>
+	<key>Application Version</key><string>12.4.1.6</string>
+	<key>Date</key><date>2016-11-14T21:16:09Z</date>
+	<key>Features</key><integer>5</integer>
+	<key>Show Content Ratings</key><true/>
+	<key>Library Persistent ID</key><string>ABCDEF123456</string>
+	<key>Tracks</key>
+	<dict>
+    <key>2383</key>
+		<dict>
+			<key>Track ID</key><integer>2383</integer>
+			<key>Year</key><integer>2008</integer>
+			<key>Play Count</key><integer>1</integer>
+			<key>Has Video</key><true/>
+			<key>Name</key><string>Sandcastles In the Sand - Robin Sparkles (Music Video)</string>
+			<key>Artist</key><string>How I Met Your Mother</string>
+			<key>Album Artist</key><string>How I Met Your Mother</string>
+			<key>Album</key><string>How I Met Your Mother, Season 3</string>
+			<key>Genre</key><string>Comedy</string>
+		</dict>
+        <key>7914</key>
+		<dict>
+			<key>Track ID</key><integer>7914</integer>
+			<key>Year</key><integer>2015</integer>
+			<key>Has Video</key><true/>
+			<key>Name</key><string>Love Boat</string>
+			<key>Artist</key><string>Scorpion</string>
+			<key>Album</key><string>Scorpion, Season 1</string>
+			<key>Genre</key><string>Drama</string>
+		</dict>
+        <key>5035</key>
+		<dict>
+			<key>Track ID</key><integer>5035</integer>
+			<key>Year</key><integer>2014</integer>
+			<key>Play Count</key><integer>261</integer>
+			<key>Rating</key><integer>60</integer>
+			<key>Name</key><string>Shake It Off</string>
+			<key>Artist</key><string>Taylor Swift</string>
+			<key>Album Artist</key><string>Taylor Swift</string>
+			<key>Album</key><string>1989</string>
+			<key>Genre</key><string>Pop</string>
+		</dict>
+        <key>5037</key>
+		<dict>
+			<key>Track ID</key><integer>5037</integer>
+			<key>Year</key><integer>2014</integer>
+			<key>Play Count</key><integer>78</integer>
+			<key>Rating</key><integer>80</integer>
+			<key>Name</key><string>Pop 101 (feat. Anami Vice)</string>
+			<key>Artist</key><string>Marianas Trench</string>
+			<key>Album Artist</key><string>Marianas Trench</string>
+			<key>Album</key><string>Pop 101 (feat. Anami Vice) - Single</string>
+			<key>Genre</key><string>Pop</string>
+		</dict>
+        <key>5888</key>
+		<dict>
+			<key>Track ID</key><integer>5888</integer>
+			<key>Year</key><integer>2014</integer>
+			<key>Play Count</key><integer>2906</integer>
+			<key>Rating</key><integer>100</integer>
+			<key>Name</key><string>Out of the Woods</string>
+			<key>Artist</key><string>Taylor Swift</string>
+			<key>Album Artist</key><string>Taylor Swift</string>
+			<key>Album</key><string>1989</string>
+			<key>Genre</key><string>Pop</string>
+		</dict>
+        <key>7827</key>
+		<dict>
+			<key>Track ID</key><integer>7827</integer>
+            <key>Year</key><integer>2014</integer>
+            <key>Name</key><string>Slow Rollin'</string>
+			<key>Artist</key><string>Lady Antebellum</string>
+			<key>Album Artist</key><string>Lady Antebellum</string>
+			<key>Album</key><string>747 (Deluxe Edition)</string>
+			<key>Genre</key><string>Country</string>
+		</dict>
+        <key>8755</key>
+		<dict>
+			<key>Track ID</key><integer>8755</integer>
+			<key>Year</key><integer>2012</integer>
+			<key>Play Count</key><integer>99</integer>
+            <key>Name</key><string>Frigga</string>
+			<key>Artist</key><string>Daniel J. Nielsen</string>
+			<key>Album</key><string>Epic Action &#38; Inspiration</string>
+			<key>Genre</key><string>Soundtrack</string>
+		</dict>
+        <key>8435</key>
+		<dict>
+			<key>Track ID</key><integer>8435</integer>
+			<key>Year</key><integer>2015</integer>
+			<key>Play Count</key><integer>106</integer>
+            <key>Rating</key><integer>100</integer>
+			<key>Name</key><string>Alexander Hamilton</string>
+			<key>Artist</key><string>Leslie Odom, Jr., Anthony Ramos, Daveed Diggs, Okieriete Onaodowan, Lin-Manuel Miranda, Phillipa Soo, Christopher Jackson &#38; Original Broadway Cast of Hamilton</string>
+			<key>Album</key><string>Hamilton (Original Broadway Cast Recording)</string>
+			<key>Genre</key><string>Soundtrack</string>
+		</dict>
+        <key>5219</key>
+		<dict>
+			<key>Track ID</key><integer>5219</integer>
+			<key>Year</key><integer>2010</integer>
+			<key>Play Count</key><integer>12012</integer>
+			<key>Rating</key><integer>100</integer>
+			<key>Name</key><string>Thinking of You</string>
+			<key>Artist</key><string>Christian Kane</string>
+			<key>Album</key><string>Thinking of You - Single</string>
+			<key>Genre</key><string>Country</string>
+		</dict>
+        <key>7830</key>
+		<dict>
+			<key>Track ID</key><integer>7830</integer>
+			<key>Year</key><integer>2014</integer>
+			<key>Rating</key><integer>60</integer>
+			<key>Play Count</key><integer>94</integer>
+			<key>Name</key><string>Out of the Woods</string>
+			<key>Artist</key><string>Taylor Swift</string>
+			<key>Album Artist</key><string>Taylor Swift</string>
+			<key>Album</key><string>1989</string>
+			<key>Genre</key><string>Pop</string>
+		</dict>
+    </dict>
+</dict>
+</plist>

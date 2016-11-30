@@ -89,7 +89,14 @@ def merge_duplicates(tracks):
             .format(removed=removed_count, remained=len(tracks)))
     return tracks
 
+
 def pickle_tracks(tracklist, filename=None):
+    """Pickle iTunes track list to file.
+
+    Args:
+        tracklist (list(ITunesTrack)): iTunes tracks to be pickled
+        filename (str): filename to pickle to, defaults to {current datetime}-tracklist.p
+    """
     if not filename:
         filename = '{date}-tracklist.p'.format(date=datetime.datetime.now()) 
 
@@ -99,7 +106,16 @@ def pickle_tracks(tracklist, filename=None):
     logger.info('Pickled {tracks} tracks to {filename}.'
                 .format(tracks=len(tracklist), filename=filename))
 
+
 def unpickle_tracks(filename):
+    """Unpickle an iTunes track list from file.
+
+    Args:
+        filename (str): name of the pickled file
+
+    Returns:
+        a list of ITunesTrack data
+    """
     with open(filename, 'rb') as file:
         tracklist = pickle.load(file)
 

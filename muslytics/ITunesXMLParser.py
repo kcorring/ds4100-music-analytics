@@ -3,16 +3,19 @@
 from __future__ import absolute_import, print_function
 
 import argparse
+import datetime
 import logging
 import os
+import pickle
 
 from lxml import etree
+
+from muslytics.tracks import ITunesTrack
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('iTunes XML Parser')
 
 TRACKS_XPATH = '/plist/dict/dict/dict'
-
 
 VIDEO_KEY = 'Has Video'
 ID_KEY = 'Track ID'
@@ -28,95 +31,6 @@ PLAY_COUNT_KEY = 'Play Count'
 REQUIRED_KEYS = [ID_KEY, NAME_KEY, ARTIST_KEY, ALBUM_KEY, YEAR_KEY, GENRE_KEY]
 
 
-class Track(object):
-    """Representation of an iTunes library music track."""
-
-    def __init__(self, id, name, artist, album, year, genre):
-        """Create a base music track.
-
-        Sets the id, name, artist, album, year, and genre as given.
-        Sets album_artist to artist, rating to None, and plays to 0.
-    
-        Args:
-            id (str): unique track id
-            name (str): track name
-            artist (str): track artist
-            album (str): track album
-            year (str): track year
-            genre (str): track genre
-
-        """
-        self.id = int(id)
-        self.name = name
-        self.artist = artist
-        self.album = album
-        self.year = int(year)
-        self.genre = genre
-
-        self.album_artist = artist
-        self.rating = None
-        self.plays = 0
-
-    def set_album_artist(self, album_artist):
-        """Set the track album artist if given a truthy value.
-
-        Args:
-            album_artist (str): track album artist
-        """
-        if album_artist:
-            self.album_artist = album_artist
-
-    def set_rating(self, rating=None):
-        """Set the track rating if given a truthy value.
-
-        Args:
-            rating (str): track rating, defaults to None
-        """
-        self.rating = int(rating) if rating is not None else None
-
-    def set_plays(self, plays=0):
-        """Set the track play count.
-
-        Args:
-            plays (str): track play count, defualts to 0
-        """
-        self.plays = int(plays)
-
-    def get_identifier(self):
-        """Retrieves a track identifier in the form of concatenated name, artist, year.
-
-        Intended to be used for identifying duplicate tracks.
-
-        Returns:
-            concatenated string of track name, artist, year
-        """
-        return '%s_%s_%s' % (self.name, self.artist, self.year)
-
-    def print_verbose(self):
-        """Creates a verbose string representation.
-        
-        Returns:
-            a verbose string representation of the track attributes
-        """
-        rstr = '%s:\t%d\n' % (ID_KEY, self.id)
-        rstr += '%s:\t\t%s\n' % (NAME_KEY, self.name)
-        rstr += '%s:\t\t%s\n' % (ARTIST_KEY, self.artist)
-        rstr += '%s:\t%s\n' % (ALBUM_ARTIST_KEY, self.album_artist)
-        rstr += '%s:\t\t%s\n' % (ALBUM_KEY, self.album)
-        rstr += '%s:\t\t%d\n' % (YEAR_KEY, self.year)
-        rstr += '%s:\t\t%s\n' % (GENRE_KEY, self.genre)
-        rstr += '%s:\t\t%s\n' % (RATING_KEY, self.rating)
-        rstr += '%s:\t%d\n' % (PLAY_COUNT_KEY, self.plays)
-
-        return rstr
-
-    def __repr__(self):
-        rstr = '(%d,%s,%s,%s,%s,%d,%s,%s,%d)' % \
-                (self.id, self.name, self.artist, self.album_artist, self.album,
-                        self.year, self.genre, self.rating, self.plays)
-        return rstr
-
-
 def merge_duplicates(tracks):
     """Merge duplicate track rating and play count info.
 
@@ -124,10 +38,10 @@ def merge_duplicates(tracks):
     average of the ratings is used.
 
     Args:
-        tracks (list(Track)): tracks to be scanned for duplicates and merged where necessary
+        tracks (list(ITunesTrack)): tracks to be scanned for duplicates and merged where necessary
 
     Returns:
-        a list of Tracks with duplicates merged and extraneous tracks removed
+        a list of ITunesTracks with duplicates merged and extraneous tracks removed
     """
     identifier_to_index = {}
     duplicate_identifiers = set()
@@ -145,7 +59,7 @@ def merge_duplicates(tracks):
             identifier_to_index[track_id] = [i]
 
     for duplicate_identifier in duplicate_identifiers:
-        logger.info('Identified duplicate track (%s).' % duplicate_identifier)
+        logger.info('Identified duplicate track ({dup}).'.format(dup=duplicate_identifier))
         duplicate_indexes = identifier_to_index[duplicate_identifier]
         duplicate_tracks = [tracks[i] for i in duplicate_indexes]
         plays = 0
@@ -171,8 +85,27 @@ def merge_duplicates(tracks):
         del tracks[i]
         removed_count += 1
     
-    logger.info('Removed %d duplicate tracks, %d tracks remain.' % (removed_count, len(tracks)))
+    logger.info('Removed {removed} duplicate tracks, {remained} tracks remain.'
+            .format(removed=removed_count, remained=len(tracks)))
     return tracks
+
+def pickle_tracks(tracklist, filename=None):
+    if not filename:
+        filename = '{date}-tracklist.p'.format(date=datetime.datetime.now()) 
+
+    with open(filename, 'wb') as file:
+        pickle.dump(tracklist, file)
+    
+    logger.info('Pickled {tracks} tracks to {filename}.'
+                .format(tracks=len(tracklist), filename=filename))
+
+def unpickle_tracks(filename):
+    with open(filename, 'rb') as file:
+        tracklist = pickle.load(file)
+
+    logger.info('Unpickled {tracks} tracks from {filename}.'
+                .format(tracks=len(tracklist), filename=filename))
+    return tracklist
 
 
 def extract_tracks(filepath):
@@ -185,7 +118,7 @@ def extract_tracks(filepath):
         a list of dict representing the tracks
     """
     if not os.path.isfile(filepath):
-        err = 'Invalid filepath %s' % (filepath)
+        err = 'Invalid filepath {filepath}'.format(filepath=filepath)
         logger.error(err)
         raise Exception(err)
 
@@ -225,7 +158,8 @@ def _get_tracks(xml_tree):
             skipped_count += 1
             continue
  
-    logger.info('Parsed %d tracks and skipped %d tracks.' % (added_count, skipped_count))
+    logger.info('Parsed {added} tracks and skipped {skipped} tracks.'
+                .format(added=added_count, skipped=skipped_count))
 
     return tracks
 
@@ -246,7 +180,7 @@ def _build_track(keys, values):
     """
     track_dict = {k:v for (k,v) in zip(keys, values)}
 
-    track = Track(*[track_dict[key].strip() for key in REQUIRED_KEYS])
+    track = ITunesTrack(*[track_dict[key].strip() for key in REQUIRED_KEYS])
     track.set_album_artist(track_dict.get(ALBUM_ARTIST_KEY, None))
     track.set_rating(track_dict.get(RATING_KEY, None))
     track.set_plays(track_dict.get(PLAY_COUNT_KEY, 0))
@@ -269,6 +203,14 @@ def _get_xml_tree(filepath):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("ilib", help="path to iTunes library XML file")
+    parser.add_argument('pickle', help='filepath to save/load pickled track data')
+    parser.add_argument('-x', '--xml', required=False,
+            help='path to iTunes library XML file')
     args = parser.parse_args()
-    tracks = extract_tracks(args.ilib)
+
+    if args.xml:
+        tracks = extract_tracks(args.xml)
+        pickle_tracks(tracks, args.pickle)
+    else:
+        tracks = unpickle_tracks(args.pickle)
+

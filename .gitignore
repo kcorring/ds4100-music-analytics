@@ -57,6 +57,9 @@ local_settings.py
 instance/
 .webassets-cache
 
+# VIM swap:
+# .swp
+
 # Scrapy stuff:
 .scrapy
 

@@ -152,7 +152,7 @@ def _add_track_to_albums(keys, values, albums):
     track.set_plays(track_dict.get(PLAY_COUNT_KEY, 0))
     track.set_genre(track_dict.get(GENRE_KEY, '').strip().encode('utf-8'))
 
-    album_name = track_dict[ALBUM_KEY].strip().encode('utf-8')
+    album_name = Album.get_album_name(track_dict[ALBUM_KEY])
     album_year = int(track_dict[YEAR_KEY])
     album_key = (album_name, album_year)
 

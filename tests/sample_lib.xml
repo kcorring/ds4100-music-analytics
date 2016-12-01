@@ -156,6 +156,29 @@
 			<key>Album</key><string>1989</string>
 			<key>Genre</key><string>Pop</string>
 		</dict>
+        <key>8737</key>
+		<dict>
+			<key>Track ID</key><integer>8737</integer>
+			<key>Year</key><integer>2016</integer>
+			<key>Play Count</key><integer>372</integer>
+			<key>Name</key><string>How Far I'll Go (Alessia Cara Version)</string>
+			<key>Artist</key><string>Alessia Cara</string>
+			<key>Album</key><string>Moana (Original Motion Picture Soundtrack) [Deluxe Edition]</string>
+			<key>Genre</key><string>Soundtrack</string>
+		</dict>
+        <key>5789</key>
+		<dict>
+			<key>Track ID</key><integer>5789</integer>
+			<key>Year</key><integer>2014</integer>
+			<key>Play Count</key><integer>191</integer>
+			<key>Rating</key><integer>80</integer>
+			<key>Album Rating</key><integer>80</integer>
+			<key>Name</key><string>Just Watch Me</string>
+			<key>Artist</key><string>Kate Voegele</string>
+			<key>Album Artist</key><string>Kate Voegele</string>
+			<key>Album</key><string>Wild Card - EP</string>
+			<key>Genre</key><string>Pop</string>
+		</dict>
     </dict>
 </dict>
 </plist>

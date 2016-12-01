@@ -12,6 +12,9 @@ SUB_FEAT_PAT = re.compile('\s*\(feat\.(?P<artist>.*)\)\s*')
 FEAT_PATTERN = re.compile('.*\(feat\.(?P<artist>.*)\)\s*')
 MULT_PATTERN = re.compile('\s*[,&]\s*')
 
+ALBUM_NAME_PATTERN = re.compile('\s*((\-\s*(Single|EP))|(\(.*\))|(\[.*\]))\s*')
+
+
 
 class Album(object):
     """A collection of tracks in an album."""
@@ -90,6 +93,23 @@ class Album(object):
                          .format(removed=removed_count,
                                  album=self.name,
                                  remained=len(self.tracks)))
+    @staticmethod
+    def get_album_name(name):
+        """Strip extraneous info from album name.
+
+        This includes:
+            - Strip " - Single" suffix
+            - Strip " - EP" suffix
+            - Strip any parenthetical suffixes
+
+        Args:
+            name (str): album name
+
+        Returns:
+            the album name with extraneous info removed
+        """
+        name = name.strip().encode('utf-8')
+        return re.sub(ALBUM_NAME_PATTERN, '', name)
 
     def __repr__(self):
         return ('({name},{artists},{year},{track_count})'

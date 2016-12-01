@@ -82,7 +82,11 @@ def extract_albums(filepath):
         logger.error(err)
         raise Exception(err)
 
-    return _get_albums(_get_xml_tree(filepath))
+    albums = _get_albums(_get_xml_tree(filepath))
+    for a in albums.values():
+        a.merge_duplicates()
+
+    return albums
 
 
 def _get_albums(xml_tree):
@@ -129,10 +133,10 @@ def _add_track_to_albums(keys, values, albums):
 
     Extracts the id, name, artist, album, year, genre, rating, and play counts from
     the given XML key and value lists. All attributes are required for parsing except for play
-    count and  rating, which default to 0 and None, respectively.
+    count, genre, and rating, which default to 0, '', and None, respectively.
 
     Creates a track and inserts it into an existing album or creates a new one. Album membership
-    is determined by album, year, genre.
+    is determined by album and year.
 
     Args:
         keys (list(Element)): list of key XML elements
@@ -146,16 +150,16 @@ def _add_track_to_albums(keys, values, albums):
     track = ITunesTrack(*[track_dict[key].strip().encode('utf-8') for key in REQUIRED_KEYS])
     track.set_rating(track_dict.get(RATING_KEY, None))
     track.set_plays(track_dict.get(PLAY_COUNT_KEY, 0))
+    track.set_genre(track_dict.get(GENRE_KEY, '').strip().encode('utf-8'))
 
     album_name = track_dict[ALBUM_KEY].strip().encode('utf-8')
     album_year = int(track_dict[YEAR_KEY])
-    album_genre = track_dict[GENRE_KEY].strip().encode('utf-8')
-    album_key = (album_name, album_year, album_genre)
+    album_key = (album_name, album_year)
 
     if album_key in albums:
         albums[album_key].add_track(track)
     else:
-        album = Album(album_name, album_year, album_genre)
+        album = Album(album_name, album_year)
         album.add_track(track)
         albums[album_key] = album
 
@@ -184,8 +188,6 @@ if __name__ == '__main__':
 
     if args.xml:
         albums = extract_albums(args.xml)
-        for album in albums.values():
-            album.merge_duplicates()
         pickle_albums(albums, args.pickle)
     else:
         albums = unpickle_albums(args.pickle)

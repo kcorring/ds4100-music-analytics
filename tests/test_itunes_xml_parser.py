@@ -9,21 +9,24 @@ from muslytics import ITunesXMLParser as ixml
 class TestITunesXMLParser(unittest.TestCase):
 
     def setUp(self):
-        self.tracks = ixml.extract_tracks('sample_lib.xml')
         pass
 
-    def test_extracted_tracks(self):
-        self.assertEqual(len(self.tracks), 8)
+    def test_extracted_and_merged_albums(self):
+        albums = ixml.extract_albums('sample_lib.xml')
 
-        ootws = filter(lambda track: track.name == 'Out of the Woods', self.tracks)
+        self.assertEqual(len(albums), 6)
+        self.assertEqual(sum(len(album.tracks) for album in albums.values()), 8)
+
+        album_key = ('1989', 2014, 'Pop')
+        self.assertIn(album_key, albums)
+        album = albums[album_key]
+        self.assertEqual(len(album.tracks), 3)
+
+        ootws = filter(lambda track: track.name == 'Out of the Woods', album.tracks)
         self.assertEqual(len(ootws), 2)
 
         ootw = ootws[0]
         self.assertEqual(ootw.artist, 'Taylor Swift')
-        self.assertEqual(ootw.album, '1989')
-        self.assertEqual(ootw.album_artist, 'Taylor Swift')
-        self.assertEqual(ootw.year, 2014)
-        self.assertEqual(ootw.genre, 'Pop')
 
         play_counts = map(lambda track: track.plays, ootws)
         self.assertIn(2906, play_counts)
@@ -37,21 +40,17 @@ class TestITunesXMLParser(unittest.TestCase):
         self.assertIn(5888, ids)
         self.assertIn(7830, ids)
 
+        for a in albums.values():
+            a.merge_duplicates()
 
-    def test_merged_tracks(self):
-        ixml.merge_duplicates(self.tracks)
+        self.assertEqual(sum(len(a.tracks) for a in albums.values()), 7)
+        self.assertEqual(len(album.tracks), 2)
 
-        self.assertEqual(len(self.tracks), 7)
-
-        ootws = filter(lambda track: track.name == 'Out of the Woods', self.tracks)
+        ootws = filter(lambda track: track.name == 'Out of the Woods', album.tracks)
         self.assertEqual(len(ootws), 1)
 
         ootw = ootws[0]
         self.assertEqual(ootw.artist, 'Taylor Swift')
-        self.assertEqual(ootw.album, '1989')
-        self.assertEqual(ootw.album_artist, 'Taylor Swift')
-        self.assertEqual(ootw.year, 2014)
-        self.assertEqual(ootw.genre, 'Pop')
         self.assertEqual(ootw.plays, 3000)
         self.assertEqual(ootw.rating, 80)
 

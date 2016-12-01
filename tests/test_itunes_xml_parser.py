@@ -2,6 +2,7 @@
 '''tests itunes library xml parser'''
 from __future__ import absolute_import, print_function
 
+import os
 import unittest
 
 from muslytics import ITunesXMLParser as ixml
@@ -9,10 +10,12 @@ from muslytics import ITunesXMLParser as ixml
 class TestITunesXMLParser(unittest.TestCase):
 
     def setUp(self):
+        sample_path = os.path.dirname(os.path.realpath(__file__))
+        self.sample_path = os.path.join(sample_path, 'sample_lib.xml')
         pass
 
     def test_extracted_and_merged_albums(self):
-        albums = ixml.extract_albums('sample_lib.xml')
+        albums = ixml.extract_albums(self.sample_path)
 
         self.assertEqual(len(albums), 6)
         self.assertEqual(sum(len(album.tracks) for album in albums.values()), 8)

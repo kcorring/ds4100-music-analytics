@@ -12,6 +12,13 @@ class Album(object):
     """A collection of tracks in an album."""
 
     def __init__(self, name, year, genre):
+        """Create a music album with no tracks.
+
+        Args:
+            name (str): album name
+            year (int): album year
+            genre (str): album genre
+        """
         self.name = name
         self.year = year
         self.genre = genre
@@ -19,9 +26,18 @@ class Album(object):
         self.tracks = []
 
     def add_track(self, track):
+        """Add a track to the music album.
+
+        Args:
+            track (ITunesTrack): iTunes track from library XML
+        """
         self.tracks.append(track)
 
     def merge_duplicates(self):
+        """Merge duplicate tracks into one and remove extraneous.
+
+        Updated track will have sum of play counts and average of ratings.
+        """
         identifier_to_index = {}
         duplicate_identifiers = set()
         removable = []

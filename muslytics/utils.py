@@ -12,7 +12,7 @@ SUB_FEAT_PAT = re.compile('\s*\(feat\.(?P<artist>.*)\)\s*')
 FEAT_PATTERN = re.compile('.*\(feat\.(?P<artist>.*)\)\s*')
 MULT_PATTERN = re.compile('\s*[,&]\s*')
 
-ALBUM_NAME_PATTERN = re.compile('\s*((\-\s*(Single|EP))|(\(.*\))|(\[.*\]))\s*')
+ALBUM_NAME_PATTERN = re.compile('\s*((\-\s*(Single|EP))|(\(.*Deluxe.*\))|(\[.*Deluxe.*\]))\s*')
 
 
 
@@ -100,7 +100,7 @@ class Album(object):
         This includes:
             - Strip " - Single" suffix
             - Strip " - EP" suffix
-            - Strip any parenthetical suffixes
+            - Strip any parenthetical suffixes containing "Deluxe"
 
         Args:
             name (str): album name

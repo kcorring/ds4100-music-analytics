@@ -59,9 +59,9 @@ class TestITunesXMLParser(unittest.TestCase):
 
     def test_album_name(self):
         self.assertIn(('Love Me Like You Do', 2015), self.albums)
-        self.assertIn(('Hamilton', 2015), self.albums)
+        self.assertIn(('Hamilton (Original Broadway Cast Recording)', 2015), self.albums)
         self.assertIn(('747', 2014), self.albums)
-        self.assertIn(('Moana', 2016), self.albums)
+        self.assertIn(('Moana (Original Motion Picture Soundtrack)', 2016), self.albums)
         self.assertIn(('Wild Card', 2014), self.albums)
 
 

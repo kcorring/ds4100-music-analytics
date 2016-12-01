@@ -15,10 +15,10 @@ class TestITunesXMLParser(unittest.TestCase):
         self.albums = ixml.extract_albums(sample_path)
 
     def test_extracted_albums(self):
-        self.assertEqual(len(self.albums), 8)
+        self.assertEqual(len(self.albums), 10)
 
     def test_merged_tracks(self):
-        self.assertEqual(sum(len(album.tracks) for album in self.albums.values()), 10)
+        self.assertEqual(sum(len(album.tracks) for album in self.albums.values()), 12)
 
         album_key = ('1989', 2014)
         self.assertIn(album_key, self.albums)
@@ -49,7 +49,7 @@ class TestITunesXMLParser(unittest.TestCase):
         self.assertEqual(len(album_artists - album.artists), 0)
         self.assertEqual(len(album.artists - album_artists), 0)
 
-        album_key = ('Love Me Like You Do - Single', 2015)
+        album_key = ('Love Me Like You Do', 2015)
         self.assertIn(album_key, self.albums)
         album = self.albums[album_key]
         self.assertEqual(len(album.artists), 2)
@@ -57,6 +57,12 @@ class TestITunesXMLParser(unittest.TestCase):
         self.assertEqual(len(album.tracks[0].artists), 2)
 
 
+    def test_album_name(self):
+        self.assertIn(('Love Me Like You Do', 2015), self.albums)
+        self.assertIn(('Hamilton', 2015), self.albums)
+        self.assertIn(('747', 2014), self.albums)
+        self.assertIn(('Moana', 2016), self.albums)
+        self.assertIn(('Wild Card', 2014), self.albums)
 
 
 if __name__ == '__main__':

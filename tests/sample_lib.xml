@@ -192,6 +192,65 @@
 			<key>Album</key><string>Wild Card - EP</string>
 			<key>Genre</key><string>Pop</string>
 		</dict>
+        <key>6427</key>
+		<dict>
+			<key>Track ID</key><integer>6427</integer>
+			<key>Track Number</key><integer>8</integer>
+			<key>Year</key><integer>2015</integer>
+			<key>Play Count</key><integer>42</integer>
+			<key>Rating</key><integer>100</integer>
+			<key>Name</key><string>Colors</string>
+			<key>Artist</key><string>Halsey</string>
+			<key>Album</key><string>BADLANDS (Deluxe)</string>
+			<key>Genre</key><string>Alternative</string>
+		</dict>
+        <key>6425</key>
+		<dict>
+			<key>Track ID</key><integer>6425</integer>
+			<key>Track Number</key><integer>14</integer>
+			<key>Year</key><integer>2015</integer>
+			<key>Play Count</key><integer>37</integer>
+			<key>Rating</key><integer>100</integer>
+			<key>Name</key><string>Control</string>
+			<key>Artist</key><string>Halsey</string>
+			<key>Album</key><string>BADLANDS</string>
+			<key>Genre</key><string>Alternative</string>
+		</dict>
+        <key>6209</key>
+		<dict>
+			<key>Track ID</key><integer>6209</integer>
+			<key>Track Number</key><integer>2</integer>
+			<key>Year</key><integer>2015</integer>
+			<key>Play Count</key><integer>34</integer>
+			<key>Rating</key><integer>80</integer>
+			<key>Name</key><string>Break Up with Him</string>
+			<key>Artist</key><string>Old Dominion</string>
+			<key>Album</key><string>Old Dominion - EP</string>
+			<key>Genre</key><string>Country</string>
+		</dict>
+        <key>6211</key>
+		<dict>
+			<key>Track ID</key><integer>6211</integer>
+			<key>Track Number</key><integer>8</integer>
+			<key>Year</key><integer>2015</integer>
+			<key>Play Count</key><integer>66</integer>
+			<key>Rating</key><integer>40</integer>
+			<key>Name</key><string>Break Up with Him</string>
+			<key>Artist</key><string>Old Dominion</string>
+			<key>Album</key><string>Meat and Candy</string>
+			<key>Genre</key><string>Country</string>
+		</dict>
+        <key>8583</key>
+		<dict>
+			<key>Track ID</key><integer>8583</integer>
+			<key>Track Number</key><integer>9</integer>
+			<key>Year</key><integer>2015</integer>
+			<key>Play Count</key><integer>1</integer>
+			<key>Name</key><string>Song for Another Time</string>
+			<key>Artist</key><string>Old Dominion</string>
+			<key>Album</key><string>Meat and Candy</string>
+			<key>Genre</key><string>Country</string>
+		</dict>
     </dict>
 </dict>
 </plist>

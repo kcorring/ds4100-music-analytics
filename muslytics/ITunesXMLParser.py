@@ -10,10 +10,11 @@ import pickle
 
 from lxml import etree
 
-from muslytics.utils import ITunesLibrary, ITunesTrack, Artist, Album
+from muslytics.ITunesUtils import ITunesLibrary, ITunesTrack, ITunesAlbum, ITunesArtist
+from muslytics.Utils import get_album_name, UNKNOWN_GENRE
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger('iTunes XML Parser')
+logger = logging.getLogger(__name__)
 
 TRACKS_XPATH = '/plist/dict/dict/dict'
 
@@ -49,7 +50,7 @@ def pickle_library(library, filename=None):
                  .format(albums=len(library.albums),
                      artists=len(library.artists),
                      tracks=len(library.tracks),
-                     genres=len(library.get_genre_map()),
+                     genres=len(library.genres),
                      filename=filename))
 
 
@@ -70,17 +71,17 @@ def unpickle_library(filename):
                  .format(albums=len(library.albums),
                      artists=len(library.artists),
                      tracks=len(library.tracks),
-                     genres=len(library.get_genre_map()),
+                     genres=len(library.genres),
                      filename=filename))
     return library
 
 
-def extract_library(filepath, remove_duplicates=False):
+def extract_library(filepath, remove_duplicates=True):
     """Extract data from iTunes library XML and split into artists, albums, and tracks.
 
     Args:
         filepath (str): iTunes library XML filepath
-        remove_duplicates (bool): whether to merge duplicate track info, defaults to False
+        remove_duplicates (bool): whether to merge duplicate track info, defaults to True
 
     Returns:
         an ITunesLibrary representing the XML data
@@ -133,7 +134,7 @@ def _get_library(xml_tree):
                  '{artist} artists, and {genre} genres.')
                 .format(skipped=skipped_count, track=len(library.tracks),
                         album=len(library.albums), artist=len(library.artists),
-                        genre=len(library.get_genre_map())))
+                        genre=len(library.genres)))
 
     return library
 
@@ -161,9 +162,7 @@ def _add_track_to_library(keys, values, library):
     track.set_plays(track_dict.get(PLAY_COUNT_KEY, 0))
     track.set_genre(track_genre)
 
-    library.add_track(track)
-
-    album_name = Album.get_album_name(track_dict[ALBUM_KEY])
+    album_name = get_album_name(track_dict[ALBUM_KEY])
     album_year = int(track_dict[YEAR_KEY])
     album_key = (album_name, album_year)
 
@@ -172,22 +171,23 @@ def _add_track_to_library(keys, values, library):
     if album_key in library.albums.iterkeys():
         album = library.albums[album_key]
     else:
-        album = Album(album_name, album_year)
+        album = ITunesAlbum(album_name, album_year)
         library.add_album(album_key, album)
         
-    album.add_track(track.id)
+    album.add_track(track)
 
-    main_artist_name = track.artists[0]
+    main_artist_name = track.main_artist
 
     if main_artist_name in library.artists:
         artist = library.artists[main_artist_name]
     else:
-        artist = Artist(main_artist_name)
+        artist = ITunesArtist(main_artist_name)
         library.add_artist(artist)
 
     artist.add_album(album_key)
     artist.add_genre(track_genre)
 
+    library.add_track(track)
 
 def _get_xml_tree(filepath):
     """Extract an XML tree from a file.
@@ -210,7 +210,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.xml:
-        library = extract_library(args.xml, True)
+        library = extract_library(args.xml)
         pickle_library(library, args.pickle)
     else:
         library = unpickle_library(args.pickle)

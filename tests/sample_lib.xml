@@ -111,6 +111,39 @@
 			<key>Album</key><string>Thinking of You - Single</string>
 			<key>Genre</key><string>Country</string>
 		</dict>
+        <key>8753</key>
+		<dict>
+			<key>Track ID</key><integer>8753</integer>
+			<key>Year</key><integer>2016</integer>
+			<key>Name</key><string>My Shot (feat. Busta Rhymes, Joell Ortiz &#38; Nate Ruess) [Rise Up Remix]</string>
+			<key>Artist</key><string>The Roots</string>
+			<key>Album Artist</key><string>Various Artists</string>
+			<key>Album</key><string>The Hamilton Mixtape</string>
+			<key>Genre</key><string>Hip-Hop/Rap</string>
+		</dict>
+        <key>8755</key>
+		<dict>
+			<key>Track ID</key><integer>8755</integer>
+			<key>Year</key><integer>2016</integer>
+			<key>Play Count</key><integer>7</integer>
+			<key>Name</key><string>Satisfied (feat. Miguel &#38; Queen Latifah)</string>
+			<key>Artist</key><string>Sia</string>
+			<key>Album Artist</key><string>Various Artists</string>
+			<key>Album</key><string>The Hamilton Mixtape</string>
+			<key>Genre</key><string>Pop</string>
+		</dict>
+        <key>6031</key>
+		<dict>
+			<key>Track ID</key><integer>6031</integer>
+			<key>Year</key><integer>2015</integer>
+			<key>Play Count</key><integer>336</integer>
+			<key>Rating</key><integer>100</integer>
+			<key>Name</key><string>Love Me Like You Do</string>
+			<key>Artist</key><string>Madilyn Bailey &#38; MAX</string>
+			<key>Album Artist</key><string>Madilyn Bailey &#38; MAX</string>
+			<key>Album</key><string>Love Me Like You Do - Single</string>
+			<key>Genre</key><string>Singer/Songwriter</string>
+		</dict>
         <key>7830</key>
 		<dict>
 			<key>Track ID</key><integer>7830</integer>

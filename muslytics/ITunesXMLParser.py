@@ -10,7 +10,7 @@ import pickle
 
 from lxml import etree
 
-from muslytics.tracks import ITunesTrack
+from muslytics.utils import ITunesTrack, Album
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('iTunes XML Parser')
@@ -21,132 +21,82 @@ VIDEO_KEY = 'Has Video'
 ID_KEY = 'Track ID'
 NAME_KEY = 'Name'
 ARTIST_KEY = 'Artist'
-ALBUM_ARTIST_KEY = 'Album Artist'
 ALBUM_KEY = 'Album'
 YEAR_KEY = 'Year'
 GENRE_KEY = 'Genre'
 RATING_KEY = 'Rating'
 PLAY_COUNT_KEY = 'Play Count'
 
-REQUIRED_KEYS = [ID_KEY, NAME_KEY, ARTIST_KEY, ALBUM_KEY, YEAR_KEY, GENRE_KEY]
+REQUIRED_KEYS = [ID_KEY, NAME_KEY, ARTIST_KEY]
 
 
-def merge_duplicates(tracks):
-    """Merge duplicate track rating and play count info.
-
-    Tracks are marked duplicates by equal get_identifier() results. The sum of the plays and
-    average of the ratings is used.
+def pickle_albums(albums, filename=None):
+    """Pickle iTunes albums to file.
 
     Args:
-        tracks (list(ITunesTrack)): tracks to be scanned for duplicates and merged where necessary
-    """
-    identifier_to_index = {}
-    duplicate_identifiers = set()
-    removable = []
-    removed_count = 0
-
-    # here, track_ids are the string identifiers not the unique int ids
-    for i, track in enumerate(tracks):
-        track_id = track.get_identifier()
-        if track_id in identifier_to_index:
-            duplicate_identifiers.add(track_id)
-            identifier_to_index[track_id].append(i)
-            removable.append(i)
-        else:
-            identifier_to_index[track_id] = [i]
-
-    for duplicate_identifier in duplicate_identifiers:
-        logger.info('Identified duplicate track ({dup}).'.format(dup=duplicate_identifier))
-        duplicate_indexes = identifier_to_index[duplicate_identifier]
-        duplicate_tracks = [tracks[i] for i in duplicate_indexes]
-        plays = 0
-        sum_rating = 0
-        dup_count = 0.
-        for track in duplicate_tracks:
-            plays += track.plays
-            if track.rating is not None:
-                sum_rating += track.rating
-                dup_count += 1
-
-        rating = sum_rating / dup_count if dup_count else None
-
-        # merge sum play counts and avg rating onto the first track and we'll
-        # remove the rest
-        merged_track = duplicate_tracks[0]
-        merged_track.set_plays(plays)
-        merged_track.set_rating(rating)
-
-    # remove the tracks whose info we merged
-    removable.reverse()
-    for i in removable:
-        del tracks[i]
-        removed_count += 1
-    
-    logger.info('Removed {removed} duplicate tracks, {remained} tracks remain.'
-            .format(removed=removed_count, remained=len(tracks)))
-
-
-def pickle_tracks(tracklist, filename=None):
-    """Pickle iTunes track list to file.
-
-    Args:
-        tracklist (list(ITunesTrack)): iTunes tracks to be pickled
-        filename (str): filename to pickle to, defaults to {current datetime}-tracklist.p
+        albums (dict): iTunes albums to be pickled
+        filename (str): filename to pickle to, defaults to {current datetime}-albums.p
     """
     if not filename:
-        filename = '{date}-tracklist.p'.format(date=datetime.datetime.now()) 
+        filename = '{date}-albums.p'.format(date=datetime.datetime.now()) 
 
     with open(filename, 'wb') as file:
-        pickle.dump(tracklist, file)
+        pickle.dump(albums, file)
     
-    logger.info('Pickled {tracks} tracks to {filename}.'
-                .format(tracks=len(tracklist), filename=filename))
+    logger.info('Pickled {albums} albums ({tracks} tracks) to {filename}.'
+                .format(albums=len(albums),
+                    tracks=sum(len(album.tracks) for album in albums.itervalues()),
+                    filename=filename))
 
 
-def unpickle_tracks(filename):
-    """Unpickle an iTunes track list from file.
+def unpickle_albums(filename):
+    """Unpickle iTunes albums/tracks from file.
 
     Args:
         filename (str): name of the pickled file
 
     Returns:
-        a list of ITunesTrack data
+        a dict of Albums containing ITunesTrack data
     """
     with open(filename, 'rb') as file:
-        tracklist = pickle.load(file)
+        albums = pickle.load(file)
 
-    logger.info('Unpickled {tracks} tracks from {filename}.'
-                .format(tracks=len(tracklist), filename=filename))
-    return tracklist
+    logger.info('Unpickled {albums} albums ({tracks} tracks) from {filename}.'
+                .format(albums=len(albums),
+                    tracks=sum(len(album.tracks) for album in albums.itervalues()),
+                    filename=filename))
+    return albums
 
 
-def extract_tracks(filepath):
-    """Extract music tracks from iTunes library XML.
+def extract_albums(filepath):
+    """Extract music tracks from iTunes library XML and splits into albums.
 
     Args:
         filepath (str): iTunes library XML filepath
 
     Returns:
-        a list of dict representing the tracks
+        a dict representing the music tracks separated into albums
     """
     if not os.path.isfile(filepath):
         err = 'Invalid filepath {filepath}'.format(filepath=filepath)
         logger.error(err)
         raise Exception(err)
 
-    return _get_tracks(_get_xml_tree(filepath))
+    return _get_albums(_get_xml_tree(filepath))
 
 
-def _get_tracks(xml_tree):
-    """Extracts all music tracks containing the required info from the given XML tree.
+def _get_albums(xml_tree):
+    """Extracts all music tracks from the given XML tree and splits into albums.
+
+    Skips any elements missing required id, name, artist, album, year, genre.
 
     Args:
         xml_tree (lxml.etree): etree extracted from the iTunes library XML file
 
     Returns:
-        a list of dict representing music tracks
+        a dict representing the music tracks separated into albums
     """
-    tracks = []
+    albums = {}
     added_count = 0
     skipped_count = 0
     # track_elems = [ Element ], representing individual track info
@@ -162,8 +112,7 @@ def _get_tracks(xml_tree):
             continue
 
         try:
-            track = _build_track(keys, values)
-            tracks.append(track)
+            albums = _add_track_to_albums(keys, values, albums)
             added_count += 1
         except Exception:
             skipped_count += 1
@@ -172,31 +121,45 @@ def _get_tracks(xml_tree):
     logger.info('Parsed {added} tracks and skipped {skipped} tracks.'
                 .format(added=added_count, skipped=skipped_count))
 
-    return tracks
+    return albums
 
 
-def _build_track(keys, values):
-    """Extract desired XML track data.
+def _add_track_to_albums(keys, values, albums):
+    """Extract desired XML track data and insert into an album.
 
-    Extracts the id, name, artist, album artist, album, year, genre, rating, and play counts from
-    the given XML key and value lists. All attributes are required for parsing except for album
-    artist, play count, and  rating, which default to artist, 0, and None, respectively.
+    Extracts the id, name, artist, album, year, genre, rating, and play counts from
+    the given XML key and value lists. All attributes are required for parsing except for play
+    count and  rating, which default to 0 and None, respectively.
+
+    Creates a track and inserts it into an existing album or creates a new one. Album membership
+    is determined by album, year, genre.
 
     Args:
         keys (list(Element)): list of key XML elements
         values (list(Element)): list of value XML elements
 
     Returns:
-        a dict containing the desired track attributes
+        a dict of albums with the new track added
     """
     track_dict = {k:v for (k,v) in zip(keys, values)}
 
-    track = ITunesTrack(*[track_dict[key].strip() for key in REQUIRED_KEYS])
-    track.set_album_artist(track_dict.get(ALBUM_ARTIST_KEY, None))
+    track = ITunesTrack(*[track_dict[key].strip().encode('utf-8') for key in REQUIRED_KEYS])
     track.set_rating(track_dict.get(RATING_KEY, None))
     track.set_plays(track_dict.get(PLAY_COUNT_KEY, 0))
 
-    return track
+    album_name = track_dict[ALBUM_KEY].strip().encode('utf-8')
+    album_year = int(track_dict[YEAR_KEY])
+    album_genre = track_dict[GENRE_KEY].strip().encode('utf-8')
+    album_key = (album_name, album_year, album_genre)
+
+    if album_key in albums:
+        albums[album_key].add_track(track)
+    else:
+        album = Album(album_name, album_year, album_genre)
+        album.add_track(track)
+        albums[album_key] = album
+
+    return albums
 
 
 def _get_xml_tree(filepath):
@@ -220,9 +183,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.xml:
-        tracks = extract_tracks(args.xml)
-        merge_duplicates(tracks)
-        pickle_tracks(tracks, args.pickle)
+        albums = extract_albums(args.xml)
+        for album in albums.values():
+            album.merge_duplicates()
+        pickle_albums(albums, args.pickle)
     else:
-        tracks = unpickle_tracks(args.pickle)
+        albums = unpickle_albums(args.pickle)
 

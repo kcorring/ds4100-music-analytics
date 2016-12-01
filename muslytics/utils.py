@@ -8,6 +8,9 @@ import re
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('Library Objects')
 
+VARIOUS_THRESHOLD = 3
+VARIOUS = 'Various Artists'
+
 SUB_FEAT_PAT = re.compile('\s*\(feat\.(?P<artist>.*)\)\s*')
 FEAT_PATTERN = re.compile('.*\(feat\.(?P<artist>.*)\)\s*')
 MULT_PATTERN = re.compile('\s*[,&]\s*')
@@ -40,6 +43,9 @@ class Album(object):
         """
         self.tracks.append(track)
         self.artists.update(track.artists)
+
+        if len(self.artists) > VARIOUS_THRESHOLD:
+            self.artists.add(VARIOUS)
 
     def merge_duplicates(self):
         """Merge duplicate tracks into one and remove extraneous.

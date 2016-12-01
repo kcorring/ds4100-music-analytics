@@ -6,6 +6,7 @@ import os
 import unittest
 
 from muslytics import ITunesXMLParser as ixml
+from muslytics.utils import VARIOUS
 
 class TestITunesXMLParser(unittest.TestCase):
 
@@ -40,14 +41,15 @@ class TestITunesXMLParser(unittest.TestCase):
         self.assertIn(album_key, self.albums)
         album = self.albums[album_key]
         self.assertEqual(len(album.tracks), 2)
-        self.assertEqual(len(album.artists), 7)
+        self.assertEqual(len(album.artists), 8)
 
         album_artists = set()
         for track in album.tracks:
             album_artists.update(track.artists)
 
         self.assertEqual(len(album_artists - album.artists), 0)
-        self.assertEqual(len(album.artists - album_artists), 0)
+        self.assertEqual(len(album.artists - album_artists), 1)
+        self.assertIn(VARIOUS, album.artists)
 
         album_key = ('Love Me Like You Do', 2015)
         self.assertIn(album_key, self.albums)

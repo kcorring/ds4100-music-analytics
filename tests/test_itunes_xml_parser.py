@@ -21,13 +21,13 @@ class TestITunesXMLParser(unittest.TestCase):
     def test_extracted_library(self):
         """Verify that extraction works."""
         library = ixml.extract_library(self.sample_path, remove_duplicates=False)
-        self.assertEqual(len(library.albums), 13)
-        self.assertEqual(len(library.tracks), 17)
-        self.assertEqual(len(library.artists), 13)
+        self.assertEqual(len(library.albums), 14)
+        self.assertEqual(len(library.tracks), 19)
+        self.assertEqual(len(library.artists), 14)
         self.assertEqual(len(library.genres), 7)
 
     def _test_merged_track(self, album_key, tracks_in_album, track_name, artist,
-            genre, plays, rating):
+            genre, plays, rating, loved):
         """Helper to verify an individual track."""
         self.assertIn(album_key, self.library.albums)
         album = self.library.albums[album_key]
@@ -41,19 +41,20 @@ class TestITunesXMLParser(unittest.TestCase):
         track = tracks[0]
         self.assertIn(artist, track.artists)
         self.assertIn(artist, album.artists)
-        self.assertEqual(self.library.genres[track.genre], genre)
+        self.assertEqual(track.genre, genre)
         self.assertEqual(track.plays, plays)
         self.assertEqual(track.rating, rating)
+        self.assertEqual(track.loved, loved)
 
     def test_merged_tracks(self):
         """Verify that duplicates are merged/removed properly."""
-        self.assertEqual(len(self.library.albums), 12)
-        self.assertEqual(len(self.library.tracks), 15)
+        self.assertEqual(len(self.library.albums), 13)
+        self.assertEqual(len(self.library.tracks), 17)
 
         self._test_merged_track(('1989', 2014), 2, 'Out of the Woods', 'Taylor Swift',
-                'Pop', 3000, 80)
+                'pop', 3000, 80, True)
         self._test_merged_track(('Meat and Candy', 2015), 2, 'Break Up with Him', 'Old Dominion',
-                'Country', 100, 60)
+                'country', 100, 60, True)
 
     def test_artists(self):
         """Verify that multiple artists are split correctly."""

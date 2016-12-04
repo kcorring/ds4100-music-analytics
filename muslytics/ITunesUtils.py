@@ -5,17 +5,13 @@ from __future__ import absolute_import, print_function
 import logging
 import re
 
-from muslytics.Utils import Track, UNKNOWN_GENRE
+from muslytics.Utils import strip_featured_artists, Track, MULT_ARTIST_PATTERN, UNKNOWN_GENRE
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-SUB_FEAT_PAT = re.compile('\s*\(feat\.(?P<artist>.*)\)\s*')
-FEAT_PATTERN = re.compile('.*\(feat\.(?P<artist>.*)\)\s*')
-MULT_PATTERN = re.compile('\s*[,&]\s*')
+FEAT_GROUP_PATTERN = re.compile('.*\(feat\.(?P<artist>.*)\)\s*')
 
-
-# TODO: WILL NEED TO CONVERT GENRES TO BINARY LATER
 
 class ITunesLibrary(object):
     """A representation of an ITunes Library"""
@@ -25,7 +21,7 @@ class ITunesLibrary(object):
         self.albums = {}
         self.tracks = {}
         self.artists = {}
-        self.genres = [None]
+        self.genres = set()
 
     def add_artist(self, artist):
         """Add an artist to this library.
@@ -51,34 +47,15 @@ class ITunesLibrary(object):
             track (ITunesTrack): an ITunes track
         """
         self.tracks[track.id] = track
+        self._add_genre(track.genre)
 
-    def get_genre(self, genre_key):
-        """Retrieve the genre name by its key.
-
-        Args:
-            genre (int): genre key
-
-        Returns:
-            the genre represented by the key
-        """
-        return self.genres[genre_key]
-
-
-    def get_genre_key(self, genre):
-        """Retrieve the genre key, adding the genre if there is none.
+    def _add_genre(self, genre):
+        """Add the genre to the library
 
         Args:
-            genre (str): genre string to be translated to an enum key
-
-        Returns:
-            an int representing the genre in the library
+            genre (str): genre to be added
         """
-        if genre in self.genres:
-            return self.genres.index(genre)
-        else:
-            genre_key = len(self.genres)
-            self.genres.append(genre)
-            return genre_key
+        self.genres.add(genre)
 
     def remove_duplicates(self):
         """Merge duplicate tracks into one and remove extraneous.
@@ -87,13 +64,14 @@ class ITunesLibrary(object):
         with the most tracks, then the most recent.
 
         Updated track will have sum of play counts and average of ratings.
+        If any of the duplicates are tagged loved, the merged will retain that.
         """
         # { track_identifier : [track_id] }
         identifier_to_index = {}
         # { track_identifier }
         duplicate_identifiers = set()
-        # { track_identifier : (track_id, plays, rating) }
-        # the track we'll merge onto, and the merged plays/rating
+        # { track_identifier : (track_id, plays, rating, loved) }
+        # the track we'll merge onto, and the merged plays/rating/loved
         merged_tracks = {}
 
         for track_id, track in self.tracks.iteritems():
@@ -111,6 +89,7 @@ class ITunesLibrary(object):
             plays = 0
             sum_rating = 0
             dup_count = 0.
+            loved = False
             album_preference = []
             for track in duplicate_tracks:
 
@@ -121,19 +100,17 @@ class ITunesLibrary(object):
                 # else, first let's make sure the dup track is from a different album
                 elif not track.album_id == album_preference[1]:
                     # preference is given to the greater year, so check the diff
-                    try:
-                        year_diff = track.album_id[1] - album_preference[1][1]
-                    except TypeError:
-                        import ipdb; ipdb.set_trace()
+                    year_diff = track.album_id[1] - album_preference[1][1]
                     # years are the same, so fallback to the number of tracks in the album
+                    tracks_in_album = len(self.albums[track.album_id].tracks)
                     if year_diff == 0:
-                        tracks_in_album = len(self.albums[track.album_id].tracks)
                         if tracks_in_album > album_preference[2]:
                             album_preference = [track.id, track.album_id, tracks_in_album]
                     # this track's year is more recent, so prefer this album
                     elif year_diff > 0:
                         album_preference = [track.id, track.album_id, tracks_in_album]
 
+                loved = loved or track.loved
                 plays += track.plays
                 if track.rating is not None:
                     sum_rating += track.rating
@@ -141,7 +118,7 @@ class ITunesLibrary(object):
 
             rating = sum_rating / dup_count if dup_count else None
 
-            merged_tracks[duplicate_identifier] = (album_preference[0], plays, rating)
+            merged_tracks[duplicate_identifier] = (album_preference[0], plays, rating, loved)
 
         removed_track_count = 0
         removed_album_count = 0
@@ -156,6 +133,7 @@ class ITunesLibrary(object):
             merged = self.tracks[merged_info[0]]
             merged.set_plays(merged_info[1])
             merged.set_rating(merged_info[2])
+            merged.set_loved(merged_info[3])
 
             for duplicate_id in duplicates:
                 # remove the duplicate tracks from their albums
@@ -259,31 +237,96 @@ class ITunesAlbum(object):
 class ITunesTrack(Track):
     """Representation of an iTunes library music track."""
 
-    def __init__(self, id, name, artists):
+    def __init__(self, id, name, artists, rating):
         """Create a base music track.
 
-        Sets the id, name, and artist as given.
+        Sets the id, name, artists, rating as given.
         If there are multiple or featured artists they will be combined in a set.
-        Defaults rating to None and plays to 0.
+        Defaults plays to 0 and genre to UNKNOWN_GENRE.
 
         Args:
             id (str): unique track id
             name (str): track name
             artists (str): track artists
+            rating (str): track rating
 
         """
-        feat_artists = FEAT_PATTERN.match(name)
-        name = SUB_FEAT_PAT.sub('', name)
-        artists = re.split(MULT_PATTERN, artists)
+        self.rating = int(rating)
+        self.plays = 0
 
-        self.main_artist = artists[0]
+        feat_artists = FEAT_GROUP_PATTERN.match(name)
+        artists = re.split(MULT_ARTIST_PATTERN, artists)
+
+        main_artist = artists[0]
         artists = set(artists)
 
         if feat_artists:
-            feat_artists = re.split(MULT_PATTERN, feat_artists.group('artist').strip())
+            name = strip_featured_artists(name)
+            feat_artists = re.split(MULT_ARTIST_PATTERN, feat_artists.group('artist').strip())
             artists.update(feat_artists)
 
-        super(ITunesTrack, self).__init__(int(id), name, list(artists))
+        if len(artists) > 1:
+            artists.remove(main_artist)
+            self.artists = list(artists)
+            self.artists.insert(0, main_artist)
+        else:
+            self.artists = [main_artist]
+
+        self.genre = UNKNOWN_GENRE
+        self.loved = False
+        self.album_id = None
+
+        super(ITunesTrack, self).__init__(int(id), name)
+
+    def set_loved(self, is_loved):
+        """Sets whether the track is 'loved' on iTunes.
+
+        Args:
+            is_loved (bool): whether the track is loved
+        """
+        self.loved = is_loved
+
+    def set_genre(self, genre=UNKNOWN_GENRE):
+        """Set the track genre.
+
+        Args:
+            genre (int): track genre, defaults to UNKNOWN_GENRE
+        """
+        self.genre = genre
+
+    def set_rating(self, rating=0):
+        """Set the track rating.
+
+        Args:
+            rating (int): track rating, defaults to 0
+        """
+        self.rating = rating
+
+    def set_plays(self, plays=0):
+        """Set the track play count.
+
+        Args:
+            plays (str): track play count, defaults to 0
+        """
+        self.plays = int(plays)
+
+    def set_album_id(self, album_id):
+        """Set the album id.
+
+        Args:
+            album_id (tuple): unique album identifier
+        """
+        self.album_id = album_id
+
+    def get_track_identifier(self):
+        """Retrieves a track identifier in the form of its name and artists.
+
+        Intended to be used for identifying duplicate tracks within the same album.
+
+        Returns:
+            tuple of track name, artists
+        """
+        return (self.name, ','.join(self.artists))
 
     def print_verbose(self):
         """Creates a verbose string representation.
@@ -295,15 +338,14 @@ class ITunesTrack(Track):
         rstr += 'Name:\t\t{name}\n'.format(name=self.name)
         rstr += 'Artists:\t\t{artist}\n'.format(artist=','.join(self.artists))
         rstr += 'Genre:\t\t{genre}\n'.format(genre=self.genre)
-        rstr += 'Track Number:\t{track_number}\n'.format(track_number=self.track_number)
         rstr += 'Rating:\t\t{rating}\n'.format(rating=self.rating)
+        rstr += 'Loved:\t\t{loved}\n'.format(loved=self.loved)
         rstr += 'Play Count:\t{plays}\n'.format(plays=self.plays)
 
         return rstr
 
     def __repr__(self):
-        rstr = ('({id},{name},({artists}),{track_number},{genre},{rating},{plays})'
+        rstr = ('({id},{name},({artists}),{genre},{rating},{loved},{plays})'
                 .format(id=self.id, name=self.name, artists=','.join(self.artists),
-                        track_number=self.track_number, genre=self.genre,
-                        rating=self.rating, plays=self.plays))
+                        genre=self.genre, rating=self.rating, loved=self.loved, plays=self.plays))
         return rstr

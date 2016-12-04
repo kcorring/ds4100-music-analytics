@@ -9,6 +9,7 @@ import os
 import pickle
 
 from lxml import etree
+from unidecode import unidecode
 
 from muslytics.ITunesUtils import ITunesLibrary, ITunesTrack, ITunesAlbum, ITunesArtist
 from muslytics.Utils import get_album_name, UNKNOWN_GENRE
@@ -19,17 +20,18 @@ logger = logging.getLogger(__name__)
 TRACKS_XPATH = '/plist/dict/dict/dict'
 
 VIDEO_KEY = 'Has Video'
+PODCAST_KEY = 'Podcast'
 ID_KEY = 'Track ID'
 NAME_KEY = 'Name'
 ARTIST_KEY = 'Artist'
 ALBUM_KEY = 'Album'
 YEAR_KEY = 'Year'
 GENRE_KEY = 'Genre'
-TRACK_NUMBER_KEY = 'Track Number'
+LOVED_KEY = 'Loved'
 RATING_KEY = 'Rating'
 PLAY_COUNT_KEY = 'Play Count'
 
-REQUIRED_TRACK_KEYS = [ID_KEY, NAME_KEY, ARTIST_KEY]
+REQUIRED_TRACK_KEYS = [ID_KEY, NAME_KEY, ARTIST_KEY, RATING_KEY]
 
 
 def pickle_library(library, filename=None):
@@ -119,8 +121,8 @@ def _get_library(xml_tree):
         # get the key and value names from the Elements
         track_kv = [x.text for x in elem.getchildren()]
         keys, values = track_kv[::2], track_kv[1::2]
-        # we don't care about music videos/tv shows/movies and this is one
-        if VIDEO_KEY in keys:
+        # we don't care about podcasts/music videos/tv shows/movies and this is one
+        if VIDEO_KEY in keys or PODCAST_KEY in keys:
             skipped_count += 1
             continue
 
@@ -142,9 +144,9 @@ def _get_library(xml_tree):
 def _add_track_to_library(keys, values, library):
     """Extract desired XML track data and associate it with artist/album in library.
 
-    Extracts the id, name, artist, album, year, genre, track_number, rating, and play counts from
+    Extracts the id, name, artist, album, year, genre, rating, and play counts from
     the given XML key and value lists. All attributes are required for parsing except for play
-    count, genre, track_number, and rating, which default to 0, '', None, and None, respectively.
+    count and genre, which default to 0, '', and None, respectively.
 
     The track is added to the library and associated with an album. The album is associated with
     the main artist.
@@ -153,12 +155,16 @@ def _add_track_to_library(keys, values, library):
         keys (list(Element)): list of key XML elements
         values (list(Element)): list of value XML elements
     """
-    track_dict = {k:v for (k,v) in zip(keys, values)}
-    track_genre = library.get_genre_key(track_dict.get(GENRE_KEY, '').strip().encode('utf-8'))
+    track_dict = {}
+    for (k,v) in zip(keys, values):
+        if isinstance(v, unicode):
+            v = unidecode(v)
+        track_dict[k] = v
 
-    track = ITunesTrack(*[track_dict[key].strip().encode('utf-8') for key in REQUIRED_TRACK_KEYS])
-    track.set_track_number(track_dict.get(TRACK_NUMBER_KEY, None))
-    track.set_rating(track_dict.get(RATING_KEY, None))
+    track_genre = track_dict.get(GENRE_KEY, '').strip().lower()
+
+    track = ITunesTrack(*[track_dict[key].strip() for key in REQUIRED_TRACK_KEYS])
+    track.set_loved(LOVED_KEY in track_dict.iterkeys())
     track.set_plays(track_dict.get(PLAY_COUNT_KEY, 0))
     track.set_genre(track_genre)
 
@@ -176,7 +182,7 @@ def _add_track_to_library(keys, values, library):
         
     album.add_track(track)
 
-    main_artist_name = track.main_artist
+    main_artist_name = track.artists[0]
 
     if main_artist_name in library.artists:
         artist = library.artists[main_artist_name]
@@ -198,7 +204,7 @@ def _get_xml_tree(filepath):
     Returns:
         an lxml etree representing the document with tag-external blankspace removed
     """
-    parser = etree.XMLParser(remove_blank_text=True)
+    parser = etree.XMLParser(remove_blank_text=True, encoding='utf-8')
     return etree.parse(filepath, parser=parser)
 
 

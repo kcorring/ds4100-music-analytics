@@ -30,39 +30,43 @@ def insert_tracks_into_table(db, track_file):
     Base.metadata.create_all(db)
     session = Session()
 
-    orm_tracks = [TrackModel(id=track.other_id,
-                             spotify_id=track.id,
-                             name=track.name,
-                             plays=track.plays,
-                             rating=track.rating,
-                             loved=track.loved,
-                             popularity=track.popularity,
-                             acousticness=track.acousticness,
-                             danceability=track.danceability,
-                             duration=track.duration_ms,
-                             energy=track.energy,
-                             instrumentalness=track.instrumentalness,
-                             key=track.key,
-                             liveness=track.liveness,
-                             loudness=track.loudness,
-                             mode=track.mode,
-                             speechiness=track.speechiness,
-                             tempo=track.tempo,
-                             time_signature=track.time_signature,
-                             valence=track.valence,
-                             )
+    orm_tracks = [Track(id=track.other_id,
+                        spotify_id=track.id,
+                        name=track.name,
+                        plays=track.plays,
+                        rating=track.rating,
+                        loved=track.loved,
+                        genre=track.genre,
+                        popularity=track.popularity,
+                        acousticness=track.acousticness,
+                        danceability=track.danceability,
+                        duration=track.duration_ms,
+                        energy=track.energy,
+                        instrumentalness=track.instrumentalness,
+                        key=track.key,
+                        liveness=track.liveness,
+                        loudness=track.loudness,
+                        mode=track.mode,
+                        speechiness=track.speechiness,
+                        tempo=track.tempo,
+                        time_signature=track.time_signature,
+                        valence=track.valence,
+                        )
                  for track in unpickle_spotify(track_file)]
 
     session.add_all(orm_tracks)
     session.commit()
 
+    return session
 
-class TrackModel(Base):
+
+class Track(Base):
     __tablename__ = 'tracks'
 
     id = Column(Integer, primary_key=True)
     spotify_id = Column(String(255))
     name = Column(String(255))
+    genre = Column(String(255))
     plays = Column(Integer)
     rating = Column(Float)
     loved = Column(Boolean)
@@ -83,7 +87,7 @@ class TrackModel(Base):
 
     def __repr__(self):
         return ('<Track(id={id}, spotify_id={s_id}, name={name}, plays={plays}, loved={loved}, ' +
-                'popularity={popularity}, acousticness={acousticness}, ' +
+                'genre={genre}, popularity={popularity}, acousticness={acousticness}, ' +
                 'danceability={danceability}, duration={duration}, energy={energy}, ' +
                 'instrumentalness={instrumentalness}, key={key}, liveness={liveness}, ' +
                 'mode={mode}, speechiness={speechiness}, tempo={tempo}, ' +
@@ -91,7 +95,7 @@ class TrackModel(Base):
                 .format(id=self.id, s_id=self.spotify_id, name=self.name, plays=self.plays,
                         loved=self.loved, popularity=self.played, acousticness=self.acousticness,
                         danceability=self.danceability, duration=self.duration, energy=self.energy,
-                        instrumentalness=self.instrumentalness, key=self.key,
+                        instrumentalness=self.instrumentalness, key=self.key, genre=self.genre,
                         liveness=self.liveness, mode=self.mode, speechiness=self.speechiness,
                         tempo=self.tempo, time_signature=self.time_signature,
                         valence=self.valence))

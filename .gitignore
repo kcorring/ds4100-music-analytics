@@ -70,7 +70,7 @@ docs/_build/
 target/
 
 # Pickled files
-*.p
+muslytics/*.p
 
 # IPython Notebook
 .ipynb_checkpoints

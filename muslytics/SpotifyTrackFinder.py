@@ -9,17 +9,26 @@ import re
 import requests
 
 from gevent import sleep
-from spotipy import Spotify
+from spotipy import Spotify, SpotifyException
 from spotipy.oauth2 import SpotifyClientCredentials
 from unidecode import unidecode
 
 from muslytics import ITunesXMLParser as ixml 
-from muslytics.Utils import strip_featured_artists, MULT_ARTIST_PATTERN
+from muslytics.SpotifyUtils import SpotifyTrack
+from muslytics.Utils import (strip_featured_artists,
+                             SuperTrack,
+                             GENRE, RATING, PLAYS, LOVED,
+                             MULT_ARTIST_PATTERN,
+                             AUDIO_FEATURES,
+                             OTHER_FEATURES,
+                             )
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 SPOTIFY_CLIENT_ID = '914476c8336d4641b49905bc5fbd96f1'
+
+MAX_RETRY = 3
 RETRY_CODES = [requests.codes.server_error,
                requests.codes.bad_gateway,
                requests.codes.service_unavailable]
@@ -27,13 +36,14 @@ WAIT_CODE = requests.codes.too_many_requests
 
 TRACK = 'track'
 SPECIAL_CHAR_MATCH = re.compile('[^\s\w]+')
+MAX_REQUEST_TRACKS = 100
 
 
 def pickle_spotify(spotify_tracks, filename=None):
     """Pickle Spotify tracks to file.
 
     Args:
-        spotify_tracks (dict): a dict of Spotify tracks
+        spotify_tracks (list(muslytics.Utils.SuperTrack): a list of Spotify tracks
         filename (str): filename to pickle to, defaults to {current datetime}-spotify.p
     """
     if not filename:
@@ -42,9 +52,8 @@ def pickle_spotify(spotify_tracks, filename=None):
     with open(filename, 'wb') as file:
         pickle.dump(spotify_tracks, file)
     
-    logger.info(('Pickled {tracks} tracks to {filename}.')
-                 .format(tracks=len(spotify_tracks.keys()),
-                         filename=filename))
+    logger.info('Pickled {tracks} tracks to {filename}.'.format(tracks=len(spotify_tracks),
+                                                                filename=filename))
 
 
 def unpickle_spotify(filename):
@@ -54,14 +63,14 @@ def unpickle_spotify(filename):
         filename (str): name of the pickled file
 
     Returns:
-        an unpickled dict of Spotify tracks
+        an unpickled list of SuperTracks
     """
     with open(filename, 'rb') as file:
         spotify_tracks = pickle.load(file)
 
     logger.info(('Unpickled {tracks} tracks from {filename}.')
-                 .format(tracks=len(spotify_tracks.keys()),
-                         filename=filename))
+                 .format(tracks=len(spotify_tracks), filename=filename))
+
     return spotify_tracks
 
 
@@ -93,17 +102,17 @@ def _make_spotify_request(deferred_request, retried=0):
     Returns:
         dict of results from the request
     """
-    # TODO: spotipy does its own retry; if that's sufficient, just do logging here
     try:
         return deferred_request()
     except SpotifyException as s_err:
         error_status = s_err.http_status
         if error_status in RETRY_CODES and retried < MAX_RETRY:
-            _make_spotify_request(deferred_request, retried + 1)
+            return _make_spotify_request(deferred_request, retried + 1)
         elif error_status == WAIT_CODE:
             # TODO: figure out where to pull X from 'retry in X seconds' from
+            # import ipdb; ipdb.set_trace()
             sleep(5)
-            make_spotify_request(deferred_request, retried + 1)
+            return _make_spotify_request(deferred_request, retried + 1)
 
 
 def _make_search_request(spotify, search_query, type):
@@ -122,36 +131,151 @@ def _make_search_request(spotify, search_query, type):
 
 
 def get_spotify_tracks(library, trace=False):
-    """Retrieve Spotify IDs of tracks that match to the library.
+    """Retrieve Spotify track info of tracks that match to the library.
 
     Args:
         library (muslytics.ITunesUtils.ITunesLibrary): iTunes library data
         trace (bool): whether Spotify API trace should be turned on, defaults to False
+
     Returns:
-        a dict of iTunes track ids to Spotify track ids and the track popularities
+        a list of SuperTracks that merge the Spotify and ITunes track info
     """
     spotify = _make_spotify_instance(trace)
+    tracks = _get_audio_features(spotify, _get_spotify_track_ids(spotify, library))
 
-    # { itunes track id : ( spotify track id, spotify track popularity ) }
-    matched_tracks = {}
+    return _make_super_tracks(tracks, library)
 
-    for track_id, track in library.tracks.iteritems():
-        search_terms = _make_search_terms(track)
-        results = _make_search_request(spotify, search_terms, type=TRACK)['tracks']['items']
+
+def _get_spotify_track_ids(spotify, library):
+    """Retrieve Spotify IDs of tracks that match to the library.
+
+    Args:
+        spotify (spotipy.Spotify): a Spotify instance
+        library (muslytics.ITunesUtils.ITunesLibrary): iTunes library data
+
+    Returns:
+        a list of SpotifyTracks representing the matched tracks
+    """
+    # [ SpotifyTrack ]
+    matched_tracks = []
+
+    for track_id, i_track in library.tracks.iteritems():
+        search_terms = _make_search_terms(i_track)
+        try:
+            results = _make_search_request(spotify, search_terms, type=TRACK)['tracks']['items']
+        except Exception as err:
+            logger.error(err.message)
+            logger.debug('Skipping {track} due to error.'.format(track=i_track))
+            continue
+
         for result in results:
-            if _is_track_match(track, result):
+            if _is_track_match(i_track, result):
                 spotify_id = result['id']
                 logger.debug('\tMatch found for {track} by {artists} (i_id={i_id}, s_id={s_id})'
-                              .format(track=track.name, artists=','.join(track.artists),
+                              .format(track=i_track.name, artists=','.join(i_track.artists),
                                       i_id=track_id, s_id=spotify_id))
-                matched_tracks[track_id] = (spotify_id, result['popularity'])
+                s_track = SpotifyTrack(spotify_id, track_id, i_track.name)
+                s_track.popularity = result['popularity']
+                matched_tracks.append(s_track)
                 break
         else:
             logger.debug('\tNo match found for {track} by {artists} (i_id={id})'
-                          .format(track=track.name, artists=','.join(track.artists), id=track_id))
+                          .format(track=i_track.name, artists=','.join(i_track.artists),
+                                  id=track_id))
 
-    # TODO: GET AUDIO FEATURES AND CREATE A NEW TRACK OBJECT TO STORE THEM IN
+    logger.info('Matched {added} tracks in Spotify. Skipped {skipped} tracks.'
+                .format(added=len(matched_tracks),
+                        skipped=len(library.tracks)-len(matched_tracks)))
+
     return matched_tracks
+
+
+def _get_audio_features(spotify, tracks):
+    """Retrieve audio features for the Spotify tracks.
+
+    Args:
+        spotify (spotipy.Spotify): a Spotify instance
+        tracks (list(muslytics.SpotifyUtils.SpotifyTrack)): spotify tracks to retrieve audio
+        features for
+
+    Returns:
+        a list of SpotifyTracks with the audio features attached
+    """
+    track_dict = {track.id: track for track in tracks}
+    r_tracks = []
+
+    num_tracks = len(tracks)
+    lower_index = 0
+
+    while lower_index < num_tracks:
+        upper_index = min(lower_index + MAX_REQUEST_TRACKS, num_tracks)
+        request_ids = [track.id for track in tracks[lower_index:upper_index]]
+
+        try:
+            audio_features = _make_spotify_request(lambda: spotify.audio_features(request_ids))
+        except Exception as err:
+            logger.error(err.message)
+            logger.debug('Skipping tracks {i}-{j} due to error.'.format(i=lower_index,
+                                                                        j=upper_index))
+            lower_index = upper_index
+            continue
+
+        for id, features in zip(request_ids, audio_features):
+            track = track_dict[id]
+            try: 
+                for feature in AUDIO_FEATURES:
+                    track.__setattr__(feature, features[feature])
+                r_tracks.append(track)
+                logger.debug('Added features for {name} (s_id={s_id}, i_id={i_id})'
+                             .format(name=track.name, s_id=track.id, i_id=track.i_id))
+            except Exception as err:
+                logger.error(err.message)
+                logger.debug('Skipping {name} (s_id={s_id}, i_id={i_id})'.format(name=track.name,
+                                                                                 s_id=track.id,
+                                                                                 i_id=track.i_id))
+
+        lower_index = upper_index
+
+    logger.info('Determined the audio features for {added} tracks. Skipped {skipped} tracks.'
+                .format(added=len(r_tracks), skipped=num_tracks-len(r_tracks)))
+
+
+    return r_tracks
+
+
+def _make_super_tracks(s_tracks, library):
+    """Merge relevant Spotify track and iTunes track information into one.
+
+    Args:
+        s_tracks (list(muslytics.SpotifyUtils.SpotifyTrack)): Spotify tracks
+        library (muslytics.ITunesUtils.ITunesLibrary): iTunes track information
+
+    Returns:
+        a list of SuperTracks representing the merged track info
+    """
+    super_tracks = []
+
+    for s_track in s_tracks:
+        i_track = library.tracks[s_track.i_id]
+
+        track = SuperTrack(s_track.id, s_track.name)
+        track.other_id = i_track.id
+        track.artists = i_track.artists
+        track.popularity = s_track.popularity
+
+        for feature in AUDIO_FEATURES:
+            track.__setattr__(feature, s_track.__getattr__(feature))
+
+        track.__setattr__(GENRE, i_track.genre)
+        track.__setattr__(LOVED, i_track.loved)
+        track.__setattr__(PLAYS, i_track.plays)
+        track.__setattr__(RATING, i_track.rating)
+
+        super_tracks.append(track)
+
+    logger.info('Combined {tracks} tracks.'.format(tracks=len(super_tracks)))
+
+    return super_tracks
 
 
 def _make_search_terms(track):

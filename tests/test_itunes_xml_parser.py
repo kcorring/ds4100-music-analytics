@@ -13,10 +13,11 @@ logging.disable(logging.CRITICAL)
 
 class TestITunesXMLParser(unittest.TestCase):
 
-    def setUp(self):
-        self.sample_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+    @classmethod
+    def setUpClass(cls):
+        cls.sample_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                         'sample_lib.xml')
-        self.library = ixml.extract_library(self.sample_path)
+        cls.library = ixml.extract_library(cls.sample_path)
 
     def test_extracted_library(self):
         """Verify that extraction works."""

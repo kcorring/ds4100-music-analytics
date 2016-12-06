@@ -7,7 +7,9 @@ import os
 import unittest
 from sqlalchemy.sql import func
 
-from muslytics.DatabaseUtils import connect, insert_tracks_into_table, Track
+from muslytics.muslytics_pipeline import unpickler
+from muslytics.Utils import Track
+from muslytics.DatabaseUtils import connect, insert_tracks_into_table
 
 logging.disable(logging.CRITICAL)
 
@@ -30,10 +32,10 @@ class TestDatabaseUtils(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         sample_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                                   'sample_lib_tracks.p')
+                                                   'sample_merged_tracks.p')
         cls.db = connect(USER, PASSWORD, HOST, DATABASE)
         Track.__table__.drop(cls.db, checkfirst=True)
-        cls.session = insert_tracks_into_table(cls.db, sample_path)
+        cls.session = insert_tracks_into_table(cls.db, unpickler(sample_path))
 
     def test_table_created(self):
         """Test that the table was created."""
@@ -47,7 +49,7 @@ class TestDatabaseUtils(unittest.TestCase):
         """Test that miscellaneous attributes and aggregates are as expected."""
         self.assertAlmostEqual(self.session.query(func.max(Track.loudness)).first()[0],
                                -2.964, places=3)
-        self.assertEqual(self.session.query(func.min(Track.duration)).first()[0], 175507)
+        self.assertEqual(self.session.query(func.min(Track.duration_ms)).first()[0], 175507)
         self.assertAlmostEqual(self.session.query(Track.rating).filter_by(id=6031).first()[0],
                                100, places=0)
         self.assertEqual(self.session.query(Track.plays).filter_by(id=5219).first()[0],

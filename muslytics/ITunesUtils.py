@@ -5,9 +5,8 @@ from __future__ import absolute_import, print_function
 import logging
 import re
 
-from muslytics.Utils import strip_featured_artists, Track, MULT_ARTIST_PATTERN, UNKNOWN_GENRE
+from muslytics.Utils import strip_featured_artists, AbstractTrack, MULT_ARTIST_PATTERN, UNKNOWN_GENRE
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 FEAT_GROUP_PATTERN = re.compile('.*\(feat\.(?P<artist>.*)\)\s*')
@@ -169,6 +168,9 @@ class ITunesLibrary(object):
                                  kept_album=len(self.albums),
                                  kept_artist=len(self.artists)))
 
+    def __len__(self):
+        return len(self.tracks)
+
 
 class ITunesArtist(object):
     """A representation of an artist."""
@@ -234,7 +236,7 @@ class ITunesAlbum(object):
                 .format(name=self.name, year=self.year, track_count=len(self.tracks)))
 
 
-class ITunesTrack(Track):
+class ITunesTrack(AbstractTrack):
     """Representation of an iTunes library music track."""
 
     def __init__(self, id, name, artists, rating):

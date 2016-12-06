@@ -17,7 +17,7 @@ class TestSpotifyTrackFinder(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         sample_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                                   'sample_lib.p')
+                                                   'sample_itunes_tracks.p')
         cls.ilibrary = unpickle_library(sample_path)
         cls.tracks = spf.get_spotify_tracks(cls.ilibrary)
 
@@ -29,7 +29,7 @@ class TestSpotifyTrackFinder(unittest.TestCase):
                             if track.artists[0] == 'Taylor Swift']
 
         for missing_id in expected_missing:
-            self.assertNotIn(missing_id, [track.other_id for track in self.tracks])
+            self.assertNotIn(missing_id, [track.i_id for track in self.tracks])
 
     def test_matching_tracks(self):
         """Test tracks that had a match on Spotify."""
@@ -42,9 +42,9 @@ class TestSpotifyTrackFinder(unittest.TestCase):
                    6699: '1182pxG4uNxr3QqIH8b8k0',
                    }
 
-        matches = {track.other_id: track.id
+        matches = {track.i_id: track.id
                    for track in self.tracks
-                   if track.other_id in targets}
+                   if track.i_id in targets}
 
         for i_id, s_id in targets.iteritems():
             self.assertEqual(s_id, matches[i_id])
@@ -84,26 +84,12 @@ class TestSpotifyTrackFinder(unittest.TestCase):
                           },
                    }
 
-        results = {track.other_id: track for track in self.tracks if track.other_id in targets}
+        results = {track.i_id: track for track in self.tracks if track.i_id in targets}
 
         for target, expecteds in targets.iteritems():
             result = results[target]
             for key, expected in expecteds.iteritems():
                 self.assertEqual(result.__getattr__(key), expected)
-
-    def test_merge(self):
-        """Test that merged Spotify/ITunes tracks retained correct info from each."""
-        # 1MRtWS7od1A1Q2j2DiEjhL, 6031: Love Me Like You Do by Madilyn Bailey & MAX
-        for track in self.tracks:
-            if track.other_id == 6031:
-                break
-
-        self.assertEqual(track.name, 'Love Me Like You Do')
-        self.assertEqual(len(track.artists), 2)
-        self.assertEqual(track.rating, 100)
-        self.assertFalse(track.loved)
-        self.assertEqual(track.acousticness, 0.821)
-        self.assertEqual(track.duration_ms, 191250)
 
 
 if __name__ == '__main__':

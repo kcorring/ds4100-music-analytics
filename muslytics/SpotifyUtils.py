@@ -5,12 +5,11 @@ from __future__ import absolute_import, print_function
 import logging
 import re
 
-from muslytics.Utils import Track, AUDIO_FEATURES
+from muslytics.Utils import AbstractTrack, AUDIO_FEATURES
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class SpotifyTrack(Track):
+class SpotifyTrack(AbstractTrack):
     """Representation of an Spotify music track."""
 
     def __init__(self, spotify_id, itunes_id, name):

@@ -5,7 +5,10 @@ from __future__ import absolute_import, print_function
 import logging
 import re
 
-logging.basicConfig(level=logging.INFO)
+from sqlalchemy import Column, Integer, String, Boolean, Float
+from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base()
 logger = logging.getLogger(__name__)
 
 UNKNOWN_GENRE = 0
@@ -87,7 +90,52 @@ def strip_featured_artists(name):
     return FEAT_ARTIST_PATTERN.sub(' ', name).strip()
 
 
-class Track(object):
+def combine_spotify_itunes_tracks(s_tracks, i_tracks):
+    """Combine iTunes and Spotify tracks into tracks that retain info from both.
+
+    Args:
+        s_tracks (list(muslytics.SpotifyUtils.SpotifyTrack)): Spotify tracks
+        i_tracks (dict(int, muslytics.ITunesUtils.ITunesTrack)): dict of iTunes track ids to their
+            tracks
+
+    Returns:
+        a list of Track that merges the iTunes and Spotify info
+    """
+    combined = {}
+
+    for s_track in s_tracks:
+        i_track = i_tracks[s_track.i_id]
+
+        track = Track(id=i_track.id,
+                      spotify_id=s_track.id,
+                      name=s_track.name,
+                      genre=i_track.genre,
+                      plays=i_track.plays,
+                      rating=i_track.rating,
+                      loved=i_track.loved,
+                      popularity=s_track.popularity,
+                      acousticness=s_track.acousticness,
+                      danceability=s_track.danceability,
+                      duration_ms=s_track.duration_ms,
+                      energy=s_track.energy,
+                      instrumentalness=s_track.instrumentalness,
+                      key=s_track.key,
+                      liveness=s_track.liveness,
+                      loudness=s_track.loudness,
+                      mode=s_track.mode,
+                      speechiness=s_track.speechiness,
+                      tempo=s_track.tempo,
+                      time_signature=s_track.time_signature,
+                      valence=s_track.valence)
+
+        combined[i_track.id] = track
+
+    logger.info('Combined {tracks} tracks.'.format(tracks=len(combined)))
+
+    return combined.values()
+
+
+class AbstractTrack(object):
     """Abstract representation of a track."""
 
     def __init__(self, id, name):
@@ -100,43 +148,44 @@ class Track(object):
         self.id = id
         self.name = name
 
-class SuperTrack(Track):
-    """Representation of a track with audio features and other information."""
 
-    def __init__(self, id, name):
-        """Base super track representation.
+class Track(Base):
+    """ORM representation of a track."""
+    __tablename__ = 'tracks'
 
-        Args:
-            id (str): track id
-            name (str): track name
-        """
-        self._inner = {feature: None for feature in AUDIO_FEATURES + OTHER_FEATURES}
-        self.artists = []
-        self.popularity=None
-        self.other_id = None
-        super(SuperTrack, self).__init__(id, name)
-
-    def __getattr__(self, attr):
-        if attr not in AUDIO_FEATURES + OTHER_FEATURES:
-            raise AttributeError('{cls} has no attribute {attr}'.format(cls=self.__class__,
-                                                                        attr=attr))
-        else:
-            return self._inner[attr]
-
-    def __setattr__(self, attr_name, attr_value):
-        if attr_name in ['id', 'other_id', 'name', 'artists', 'popularity', '_inner']:
-            super(SuperTrack, self).__setattr__(attr_name, attr_value)
-        else:
-            if attr_name in self._inner:
-                self._inner[attr_name] = attr_value
-            else:
-                raise AttributeError('{cls} has no attribute {attr}'.format(cls=self.__class__,
-                                                                            attr=attr))
+    id = Column(Integer, primary_key=True)
+    spotify_id = Column(String(255))
+    name = Column(String(255))
+    genre = Column(String(255))
+    plays = Column(Integer)
+    rating = Column(Float)
+    loved = Column(Boolean)
+    popularity = Column(Integer)
+    acousticness = Column(Float)
+    danceability = Column(Float)
+    duration_ms = Column(Integer)
+    energy = Column(Float)
+    instrumentalness = Column(Float)
+    key = Column(Integer)
+    liveness = Column(Float)
+    loudness = Column(Float)
+    mode = Column(Integer)
+    speechiness = Column(Float)
+    tempo = Column(Float)
+    time_signature = Column(Integer)
+    valence = Column(Float)
 
     def __repr__(self):
-        return ('({name} by {artists}, ({id}, {other_id}), {features})'
-                .format(name=self.name,
-                        artists=self.artists,
-                        id=self.id,
-                        other_id=self.other_id,
-                        features=self._inner.__repr__()))
+        return ('<Track(id={id}, spotify_id={s_id}, name={name}, plays={plays}, loved={loved}, ' +
+                'genre={genre}, popularity={popularity}, acousticness={acousticness}, ' +
+                'danceability={danceability}, duration_ms={duration_ms}, energy={energy}, ' +
+                'instrumentalness={instrumentalness}, key={key}, liveness={liveness}, ' +
+                'mode={mode}, speechiness={speechiness}, tempo={tempo}, ' +
+                'time_signature={time_signature}, valence={valence})>'
+                .format(id=self.id, s_id=self.spotify_id, name=self.name, plays=self.plays,
+                        loved=self.loved, popularity=self.played, acousticness=self.acousticness,
+                        danceability=self.danceability, duration_ms=self.duration_ms,
+                        energy=self.energy, instrumentalness=self.instrumentalness, key=self.key,
+                        genre=self.genre, liveness=self.liveness, mode=self.mode,
+                        speechiness=self.speechiness, tempo=self.tempo,
+                        time_signature=self.time_signature, valence=self.valence))

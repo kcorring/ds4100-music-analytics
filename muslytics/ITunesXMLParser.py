@@ -11,10 +11,10 @@ import pickle
 from lxml import etree
 from unidecode import unidecode
 
+from muslytics import configure_logging
 from muslytics.ITunesUtils import ITunesLibrary, ITunesTrack, ITunesAlbum, ITunesArtist
 from muslytics.Utils import get_album_name, UNKNOWN_GENRE
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 TRACKS_XPATH = '/plist/dict/dict/dict'
@@ -121,18 +121,26 @@ def _get_library(xml_tree):
         # get the key and value names from the Elements
         track_kv = [x.text for x in elem.getchildren()]
         keys, values = track_kv[::2], track_kv[1::2]
+        track_dict = {}
+        for (k,v) in zip(keys, values):
+            if isinstance(v, unicode):
+                v = unidecode(v)
+            track_dict[k] = v
+
         # we don't care about podcasts/music videos/tv shows/movies and this is one
-        if VIDEO_KEY in keys or PODCAST_KEY in keys:
+        if VIDEO_KEY in track_dict or PODCAST_KEY in track_dict:
+            logger.debug('Skipping non-music item id={id}.'.format(id=track_dict[ID_KEY]))
             skipped_count += 1
             continue
 
         try:
-            _add_track_to_library(keys, values, library)
+            _add_track_to_library(track_dict, library)
         except Exception:
+            logger.debug('Skipped music track id={id}.'.format(id=track_dict[ID_KEY]), exc_info=True)
             skipped_count += 1
             continue
  
-    logger.info(('Skipped {skipped} tracks. Resulted in {track} tracks, {album} albums, ' +
+    logger.info(('Skipped {skipped} tracks. Output {track} tracks, {album} albums, ' +
                  '{artist} artists, and {genre} genres.')
                 .format(skipped=skipped_count, track=len(library.tracks),
                         album=len(library.albums), artist=len(library.artists),
@@ -141,7 +149,7 @@ def _get_library(xml_tree):
     return library
 
 
-def _add_track_to_library(keys, values, library):
+def _add_track_to_library(track_dict, library):
     """Extract desired XML track data and associate it with artist/album in library.
 
     Extracts the id, name, artist, album, year, genre, rating, and play counts from
@@ -152,15 +160,8 @@ def _add_track_to_library(keys, values, library):
     the main artist.
 
     Args:
-        keys (list(Element)): list of key XML elements
-        values (list(Element)): list of value XML elements
+        track_dict (dict(str, str)): track key-value pairs from xml
     """
-    track_dict = {}
-    for (k,v) in zip(keys, values):
-        if isinstance(v, unicode):
-            v = unidecode(v)
-        track_dict[k] = v
-
     track_genre = track_dict.get(GENRE_KEY, '').strip().lower()
 
     track = ITunesTrack(*[track_dict[key].strip() for key in REQUIRED_TRACK_KEYS])
@@ -213,7 +214,11 @@ if __name__ == '__main__':
     parser.add_argument('pickle', help='filepath to save/load pickled track data')
     parser.add_argument('-x', '--xml', required=False,
             help='path to iTunes library XML file')
+    parser.add_argument('-l', '--logging', required=False,
+            help='log to the given filename')
     args = parser.parse_args()
+
+    configure_logging(args.verbose, args.logging)
 
     if args.xml:
         library = extract_library(args.xml)

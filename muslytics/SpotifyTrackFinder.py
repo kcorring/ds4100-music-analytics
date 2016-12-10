@@ -3,6 +3,7 @@
 from __future__ import absolute_import, print_function
 
 import argparse
+import datetime
 import logging
 import pickle
 import re
@@ -13,17 +14,11 @@ from spotipy import Spotify, SpotifyException
 from spotipy.oauth2 import SpotifyClientCredentials
 from unidecode import unidecode
 
+from muslytics import configure_logging
 from muslytics import ITunesXMLParser as ixml 
 from muslytics.SpotifyUtils import SpotifyTrack
-from muslytics.Utils import (strip_featured_artists,
-                             SuperTrack,
-                             GENRE, RATING, PLAYS, LOVED,
-                             MULT_ARTIST_PATTERN,
-                             AUDIO_FEATURES,
-                             OTHER_FEATURES,
-                             )
+from muslytics.Utils import strip_featured_artists, MULT_ARTIST_PATTERN, AUDIO_FEATURES
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 SPOTIFY_CLIENT_ID = '914476c8336d4641b49905bc5fbd96f1'
@@ -43,7 +38,7 @@ def pickle_spotify(spotify_tracks, filename=None):
     """Pickle Spotify tracks to file.
 
     Args:
-        spotify_tracks (list(muslytics.Utils.SuperTrack): a list of Spotify tracks
+        spotify_tracks (list(muslytics.SpotifyUtils.SpotifyTrack): a list of Spotify tracks
         filename (str): filename to pickle to, defaults to {current datetime}-spotify.p
     """
     if not filename:
@@ -63,7 +58,7 @@ def unpickle_spotify(filename):
         filename (str): name of the pickled file
 
     Returns:
-        an unpickled list of SuperTracks
+        an unpickled list of Spotify tracks
     """
     with open(filename, 'rb') as file:
         spotify_tracks = pickle.load(file)
@@ -138,12 +133,10 @@ def get_spotify_tracks(library, trace=False):
         trace (bool): whether Spotify API trace should be turned on, defaults to False
 
     Returns:
-        a list of SuperTracks that merge the Spotify and ITunes track info
+        a list of SpotifyTracks that correspond to iTunes library tracks
     """
     spotify = _make_spotify_instance(trace)
-    tracks = _get_audio_features(spotify, _get_spotify_track_ids(spotify, library))
-
-    return _make_super_tracks(tracks, library)
+    return _get_audio_features(spotify, _get_spotify_track_ids(spotify, library))
 
 
 def _get_spotify_track_ids(spotify, library):
@@ -156,7 +149,7 @@ def _get_spotify_track_ids(spotify, library):
     Returns:
         a list of SpotifyTracks representing the matched tracks
     """
-    # [ SpotifyTrack ]
+    # { SpotifyTrack }
     matched_tracks = []
 
     for track_id, i_track in library.tracks.iteritems():
@@ -164,7 +157,7 @@ def _get_spotify_track_ids(spotify, library):
         try:
             results = _make_search_request(spotify, search_terms, type=TRACK)['tracks']['items']
         except Exception as err:
-            logger.error(err.message)
+            logger.error(err.message, exc_info=True)
             logger.debug('Skipping {track} due to error.'.format(track=i_track))
             continue
 
@@ -214,7 +207,7 @@ def _get_audio_features(spotify, tracks):
         try:
             audio_features = _make_spotify_request(lambda: spotify.audio_features(request_ids))
         except Exception as err:
-            logger.error(err.message)
+            logger.error(err.message, exc_info=True)
             logger.debug('Skipping tracks {i}-{j} due to error.'.format(i=lower_index,
                                                                         j=upper_index))
             lower_index = upper_index
@@ -229,7 +222,7 @@ def _get_audio_features(spotify, tracks):
                 logger.debug('Added features for {name} (s_id={s_id}, i_id={i_id})'
                              .format(name=track.name, s_id=track.id, i_id=track.i_id))
             except Exception as err:
-                logger.error(err.message)
+                logger.error(err.message, exc_info=True)
                 logger.debug('Skipping {name} (s_id={s_id}, i_id={i_id})'.format(name=track.name,
                                                                                  s_id=track.id,
                                                                                  i_id=track.i_id))
@@ -241,41 +234,6 @@ def _get_audio_features(spotify, tracks):
 
 
     return r_tracks
-
-
-def _make_super_tracks(s_tracks, library):
-    """Merge relevant Spotify track and iTunes track information into one.
-
-    Args:
-        s_tracks (list(muslytics.SpotifyUtils.SpotifyTrack)): Spotify tracks
-        library (muslytics.ITunesUtils.ITunesLibrary): iTunes track information
-
-    Returns:
-        a list of SuperTracks representing the merged track info
-    """
-    super_tracks = []
-
-    for s_track in s_tracks:
-        i_track = library.tracks[s_track.i_id]
-
-        track = SuperTrack(s_track.id, s_track.name)
-        track.other_id = i_track.id
-        track.artists = i_track.artists
-        track.popularity = s_track.popularity
-
-        for feature in AUDIO_FEATURES:
-            track.__setattr__(feature, s_track.__getattr__(feature))
-
-        track.__setattr__(GENRE, i_track.genre)
-        track.__setattr__(LOVED, i_track.loved)
-        track.__setattr__(PLAYS, i_track.plays)
-        track.__setattr__(RATING, i_track.rating)
-
-        super_tracks.append(track)
-
-    logger.info('Combined {tracks} tracks.'.format(tracks=len(super_tracks)))
-
-    return super_tracks
 
 
 def _make_search_terms(track):
@@ -372,12 +330,13 @@ if __name__ == '__main__':
             help='path to iTunes album pickle')
     parser.add_argument('-t', '--trace', action='store_true',
             help='turn on Spotify API tracing, defaults to False')
-    parser.add_argument('-d', '--debug', action='store_true',
-            help='turn on debug logging, defaults to False')
+    parser.add_argument('-v', '--verbose', action='store_true',
+            help='increase output verbosity, defaults to False')
+    parser.add_argument('-l', '--logging', required=False,
+            help='log to the given filename')
     args = parser.parse_args()
 
-    if args.debug:
-        logger.setLevel(logging.DEBUG)
+    configure_logging(args.verbose, args.logging)
 
     if args.full or args.ipickle:
         if args.full:

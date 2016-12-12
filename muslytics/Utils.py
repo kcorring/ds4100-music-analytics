@@ -109,6 +109,7 @@ def combine_spotify_itunes_tracks(s_tracks, i_tracks):
         track = Track(id=i_track.id,
                       spotify_id=s_track.id,
                       name=s_track.name,
+                      artists=','.join(i_track.artists),
                       genre=i_track.genre,
                       plays=i_track.plays,
                       rating=i_track.rating,
@@ -126,7 +127,8 @@ def combine_spotify_itunes_tracks(s_tracks, i_tracks):
                       speechiness=s_track.speechiness,
                       tempo=s_track.tempo,
                       time_signature=s_track.time_signature,
-                      valence=s_track.valence)
+                      valence=s_track.valence,
+                      year=i_track.year)
 
         combined[i_track.id] = track
 
@@ -156,6 +158,7 @@ class Track(Base):
     id = Column(Integer, primary_key=True)
     spotify_id = Column(String(255))
     name = Column(String(255))
+    artists = Column(String(255))
     genre = Column(String(255))
     plays = Column(Integer)
     rating = Column(Float)
@@ -174,11 +177,13 @@ class Track(Base):
     tempo = Column(Float)
     time_signature = Column(Integer)
     valence = Column(Float)
+    year = Column(Integer)
 
     def __repr__(self):
         return ('<Track(id={id}, spotify_id={s_id}, name={name}, plays={plays}, loved={loved}, ' +
-                'genre={genre}, popularity={popularity}, acousticness={acousticness}, ' +
-                'danceability={danceability}, duration_ms={duration_ms}, energy={energy}, ' +
+                'artists={artists}, genre={genre}, popularity={popularity}, ' +
+                'acousticness={acousticness}, danceability={danceability}, ' +
+                'year={year}, duration_ms={duration_ms}, energy={energy}, ' +
                 'instrumentalness={instrumentalness}, key={key}, liveness={liveness}, ' +
                 'mode={mode}, speechiness={speechiness}, tempo={tempo}, ' +
                 'time_signature={time_signature}, valence={valence})>'
@@ -186,6 +191,6 @@ class Track(Base):
                         loved=self.loved, popularity=self.played, acousticness=self.acousticness,
                         danceability=self.danceability, duration_ms=self.duration_ms,
                         energy=self.energy, instrumentalness=self.instrumentalness, key=self.key,
-                        genre=self.genre, liveness=self.liveness, mode=self.mode,
-                        speechiness=self.speechiness, tempo=self.tempo,
+                        year=self.year, genre=self.genre, liveness=self.liveness, mode=self.mode,
+                        artists=self.artists, speechiness=self.speechiness, tempo=self.tempo,
                         time_signature=self.time_signature, valence=self.valence))

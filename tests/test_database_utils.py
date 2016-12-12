@@ -50,8 +50,7 @@ class TestDatabaseUtils(unittest.TestCase):
         self.assertAlmostEqual(self.session.query(func.max(Track.loudness)).first()[0],
                                -2.964, places=3)
         self.assertEqual(self.session.query(func.min(Track.duration_ms)).first()[0], 175507)
-        self.assertAlmostEqual(self.session.query(Track.rating).filter_by(id=6031).first()[0],
-                               100, places=0)
+        self.assertEqual(self.session.query(Track.rating).filter_by(id=6031).first()[0], 5)
         self.assertEqual(self.session.query(Track.plays).filter_by(id=5219).first()[0],
                          12012)
         self.assertEqual(self.session.query(Track.name).filter_by(id=8755).first()[0],

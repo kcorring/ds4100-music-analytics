@@ -10,6 +10,7 @@ from muslytics.Utils import strip_featured_artists, AbstractTrack, MULT_ARTIST_P
 logger = logging.getLogger(__name__)
 
 FEAT_GROUP_PATTERN = re.compile('.*\(feat\.(?P<artist>.*)\)\s*')
+RATING_MAPPING = {0: 0, None: 0, 20: 1, 40: 2, 60: 3, 80: 4, 100: 5}
 
 
 class ITunesLibrary(object):
@@ -86,8 +87,7 @@ class ITunesLibrary(object):
             duplicate_indexes = identifier_to_index[duplicate_identifier]
             duplicate_tracks = [self.tracks[track_id] for track_id in duplicate_indexes]
             plays = 0
-            sum_rating = 0
-            dup_count = 0.
+            rating = 0
             loved = False
             album_preference = []
             for track in duplicate_tracks:
@@ -111,11 +111,7 @@ class ITunesLibrary(object):
 
                 loved = loved or track.loved
                 plays += track.plays
-                if track.rating is not None:
-                    sum_rating += track.rating
-                    dup_count += 1
-
-            rating = sum_rating / dup_count if dup_count else None
+                rating = track.rating if track.rating > rating else rating
 
             merged_tracks[duplicate_identifier] = (album_preference[0], plays, rating, loved)
 
@@ -253,7 +249,7 @@ class ITunesTrack(AbstractTrack):
             rating (str): track rating
 
         """
-        self.rating = int(rating)
+        self.rating = RATING_MAPPING[int(rating)]
         self.plays = 0
 
         feat_artists = FEAT_GROUP_PATTERN.match(name)
@@ -277,8 +273,17 @@ class ITunesTrack(AbstractTrack):
         self.genre = UNKNOWN_GENRE
         self.loved = False
         self.album_id = None
+        self.year = None
 
         super(ITunesTrack, self).__init__(int(id), name)
+
+    def set_year(self, year):
+        """Sets the track year.
+
+        Args:
+            year (int): year the track was released
+        """
+        self.year = int(year) if year else None
 
     def set_loved(self, is_loved):
         """Sets whether the track is 'loved' on iTunes.
@@ -343,6 +348,7 @@ class ITunesTrack(AbstractTrack):
         rstr += 'Rating:\t\t{rating}\n'.format(rating=self.rating)
         rstr += 'Loved:\t\t{loved}\n'.format(loved=self.loved)
         rstr += 'Play Count:\t{plays}\n'.format(plays=self.plays)
+        rstr += 'Year:\t{year}\n'.format(year=self.year)
 
         return rstr
 

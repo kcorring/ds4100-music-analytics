@@ -34,7 +34,7 @@ class TestCombineTracks(unittest.TestCase):
 
         self.assertEqual(track.spotify_id, '1MRtWS7od1A1Q2j2DiEjhL')
         self.assertEqual(track.name, 'Love Me Like You Do')
-        self.assertEqual(track.rating, 100)
+        self.assertEqual(track.rating, 5)
         self.assertFalse(track.loved)
         self.assertEqual(track.acousticness, 0.821)
         self.assertEqual(track.duration_ms, 191250)

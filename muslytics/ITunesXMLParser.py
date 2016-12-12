@@ -167,6 +167,7 @@ def _add_track_to_library(track_dict, library):
     track = ITunesTrack(*[track_dict[key].strip() for key in REQUIRED_TRACK_KEYS])
     track.set_loved(LOVED_KEY in track_dict.iterkeys())
     track.set_plays(track_dict.get(PLAY_COUNT_KEY, 0))
+    track.set_year(track_dict.get(YEAR_KEY, None))
     track.set_genre(track_genre)
 
     album_name = get_album_name(track_dict[ALBUM_KEY])
@@ -216,6 +217,7 @@ if __name__ == '__main__':
             help='path to iTunes library XML file')
     parser.add_argument('-l', '--logging', required=False,
             help='log to the given filename')
+    parser.add_argument('-v', '--verbose', action='store_true', help='increase output verbosity')
     args = parser.parse_args()
 
     configure_logging(args.verbose, args.logging)

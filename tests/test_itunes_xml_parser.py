@@ -53,9 +53,9 @@ class TestITunesXMLParser(unittest.TestCase):
         self.assertEqual(len(self.library.tracks), 17)
 
         self._test_merged_track(('1989', 2014), 2, 'Out of the Woods', 'Taylor Swift',
-                'pop', 3000, 80, True)
+                'pop', 3000, 5, True)
         self._test_merged_track(('Meat and Candy', 2015), 2, 'Break Up with Him', 'Old Dominion',
-                'country', 100, 60, True)
+                'country', 100, 4, True)
 
     def test_artists(self):
         """Verify that multiple artists are split correctly."""
